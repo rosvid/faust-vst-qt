@@ -151,7 +151,7 @@ else
     # compile c++ to binary
     (
         cd "$tmpdir"
-       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLOCAL" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" "RESOURCES+= $FAUSTINC/faust/gui/Styles/Grey.qrc"
+       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=-D__cdecl=" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLOCAL" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" "RESOURCES+= $FAUSTINC/faust/gui/Styles/Grey.qrc"
         $QMAKE *.pro
       	make
     ) > /dev/null
