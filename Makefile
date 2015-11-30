@@ -1,7 +1,7 @@
 # This is a GNU Makefile.
 
 # Package name and version:
-dist = faust-vst-qt$(version)
+dist = faust-vst-qt-$(version)
 version = 0.1
 
 # Installation prefix and default installation dirs. NOTE: vstlibdir is used
@@ -110,7 +110,10 @@ EXTRA_CFLAGS += -I$(SDK) -I$(SDKSRC) -Iexamples -D__cdecl= $(DEFINES)
 
 .PHONY: all clean install uninstall install-faust uninstall-faust dist distcheck
 
-all: faust2faustvstqt $(plugins)
+all: faust2faustvstqt
+
+# This doesn't work (yet!).
+plugins: $(plugins)
 
 # This sets the proper SDK paths in the faust2faustvstqt script, detected at
 # build time.
@@ -174,9 +177,7 @@ install-faust: faust2faustvstqt
 	test -d $(DESTDIR)$(bindir) || mkdir -p $(DESTDIR)$(bindir)
 	cp faust2faustvstqt $(DESTDIR)$(bindir)
 	test -d $(DESTDIR)$(faustlibdir) || mkdir -p $(DESTDIR)$(faustlibdir)
-	cp faustvstqt.cpp $(DESTDIR)$(faustlibdir)
-	test -d $(DESTDIR)$(faustlibdir) || mkdir -p $(DESTDIR)$(faustlibdir)
-	cp editor_faustvstqt.h $(DESTDIR)$(faustlibdir)
+	cp faustvstqt.cpp editor_faustvstqt.h $(DESTDIR)$(faustlibdir)
 
 uninstall-faust:
 	rm -f $(DESTDIR)$(bindir)/faust2faustvstqt
