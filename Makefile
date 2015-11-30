@@ -1,7 +1,7 @@
 # This is a GNU Makefile.
 
 # Package name and version:
-dist = faust-vst-qt$(version)
+dist = faust-vst-qt-$(version)
 version = 0.1
 
 # Installation prefix and default installation dirs. NOTE: vstlibdir is used
