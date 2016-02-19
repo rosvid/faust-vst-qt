@@ -29,7 +29,7 @@ with {
 	t		= SR*dtime/2*(1+depth*tblosc(1<<16, sin, freq, phase));
 };
 
-process			= vgroup("chorus", (left, right))
+process			= (left, right)
 with {
 	left		= chorus(dtime,freq,depth,0);
 	right		= chorus(dtime,freq,depth,PI/2);
