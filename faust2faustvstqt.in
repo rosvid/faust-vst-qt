@@ -16,6 +16,9 @@ FAUST_MIDICC=1
 FAUST_MTS=1
 NVOICES=0
 
+KEEP="no"
+STYLE=""
+
 # These should be detected properly at build time, but you can also set them
 # to alternative locations using the SDK and SDKSRC environment variables.
 # Set this to the location where you keep your VST SDK files.
@@ -37,10 +40,26 @@ if [[ $(uname) == Darwin ]]; then
 fi
 
 # We recognize the following special options here:
+
+# plugin-specific options:
 # -nometa: ignore metadata (author information etc.) from the Faust source
 # -nomidicc: plugin doesn't process MIDI control data
 # -notuning: disable the tuning control (VSTi only)
 # -nvoices N: number of synth voices (VSTi only; arg must be an integer)
+
+# Qt-specific options:
+# -style: select the stylesheet to be used
+#
+# This must be the basename of a stylesheet in $FAUSTINC/faust/gui/Styles/
+# (one of Default, Blue, Grey, Salmon at the time of this writing).
+
+# Build options:
+# -keep: retain the build directory
+#
+# When using this option, the build directory won't be deleted but can be
+# found under the dsp basename after compilation. This may be useful for
+# debugging and inspection purposes, if there are C++ compilation errors to
+# be sorted out, or if you want change stuff manually.
 
 for ((i=1;i<$#+1;i++)); do
     p=${!i}
@@ -69,6 +88,11 @@ for ((i=1;i<$#+1;i++)); do
     elif [ $p = "-osx" ]; then
 	CXXFLAGS="-O3 $ARCH -mfpmath=sse -msse -msse2 -msse3 -ffast-math -ftree-vectorize -I/opt/local/include"
 	dllext=".vst"
+    elif [ $p = "-style" ]; then
+	(( i++ ))
+    	STYLE=${!i}
+    elif [ $p = "-keep" ]; then
+	KEEP="yes"
     elif [ ${p:0:1} = "-" ]; then
 	OPTIONS="$OPTIONS $p"
     elif [[ -f "$p" ]]; then
@@ -90,11 +114,19 @@ fi
 arch=faustvstqt.cpp
 dspname=${FILES[0]}
 SRCDIR=$(dirname "$dspname")
+ABSDIR=$(cd $SRCDIR && pwd)
 
 clsname=`basename "$dspname" .dsp`
 cppname="$clsname.cpp"
 soname="$clsname$dllext"
 tmpdir=`mktemp -d /tmp/faust2faustvstqt.XXXXXX`
+
+RESOURCES=
+STYLE_CXXFLAGS=
+if [ -n "$STYLE" ]; then
+    RESOURCES="RESOURCES+=$FAUSTINC/faust/gui/Styles/$STYLE.qrc"
+    STYLE_CXXFLAGS="QMAKE_CXXFLAGS+=-DSTYLE=\"$STYLE\""
+fi
 
 CXX=g++
 CPPFLAGS="-DFAUST_META=$FAUST_META -DFAUST_MIDICC=$FAUST_MIDICC -DFAUST_MTS=$FAUST_MTS -DNVOICES=$NVOICES -I$SDK -I$SDKSRC -D__cdecl="
@@ -115,6 +147,8 @@ mkdir -p $tmpdir
 # Compile the Faust module.
 faust -i -a $arch $OPTIONS "$dspname" -o "$tmpdir/$cppname"
 if [[ $(uname) == Darwin ]]; then
+    echo "Sorry, Mac OS X compilation is not supported yet." >&2
+    exit 1
     mkdir -p $tmpdir/$soname/Contents/MacOS
     printf '%s' 'BNDL????' > $tmpdir/$soname/Contents/PkgInfo
     sed -e "s?@name@?$clsname?g;s?@version@?1.0.0?g" > $tmpdir/$soname/Contents/Info.plist <<EOF
@@ -146,12 +180,12 @@ if [[ $(uname) == Darwin ]]; then
 EOF
     $CXX -bundle $CXXFLAGS $FAUSTTOOLSFLAGS $PROCARCH $CPPFLAGS $sdksrc "$tmpdir/$cppname" -o "$tmpdir/$soname/Contents/MacOS/$clsname"
 else
-    echo "Generating faust-vst-qt-Plug-In. Please wait...";
+    #echo "Generating VST-Qt plugin $soname. Please wait...";
 
     # compile c++ to binary
     (
         cd "$tmpdir"
-       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=-D__cdecl=" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLOCAL" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" "RESOURCES+= $FAUSTINC/faust/gui/Styles/Grey.qrc"
+       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=-D__cdecl=" $STYLE_CXXFLAGS "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLOCAL" "INCLUDEPATH+=$ABSDIR" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" $RESOURCES
         $QMAKE *.pro
       	make
     ) > /dev/null
@@ -163,7 +197,13 @@ rm -rf "$SRCDIR/$soname"
 mv "$tmpdir/"*.so "$tmpdir/$soname"
 # copy
 cp -r "$tmpdir/$soname" "$SRCDIR"
-# Clean up.
-rm -rf $tmpdir
+if [[ $KEEP == yes ]]; then
+    # keep the build directory
+    rm -rf "$SRCDIR/$clsname"
+    mv $tmpdir "$SRCDIR/$clsname"
+else
+    # Clean up.
+    rm -rf $tmpdir
+fi
 # Print the name of the generated plugin.
 echo "$SRCDIR/$soname;"
