@@ -2251,9 +2251,12 @@ VstInt32 VSTWrapper::processEvents(VstEvents* events)
   return 1;
 }
 
+/* Qt-specific part starts here. *********************************************/
+
+/* Code below is by Roman Svidler (rosvid). */
 
 /***
- * es folgen Getter-Methoden, die in der Editor-Klasse gebraucht werden (siehe open(..))
+ * getter methods needed by the editor class (see open(..))
  ***/
 
 float VSTWrapper::getMinimum(VstInt32 index){
@@ -2296,11 +2299,11 @@ int VSTWrapper::isPassiveControl(VstInt32 index){
       assert(index == plugin->ui[0]->elems[j].port);
       switch (plugin->ui[0]->elems[j].type) {
         case UI_V_BARGRAPH:
-          return 1;         //return 1, if the passive Control is of type UI_V_BARGRAPH
+          return 1;         // passive control is of type UI_V_BARGRAPH
         case UI_H_BARGRAPH:
-          return 2;         //return 2, if the passive Control is of type UI_H_BARGRAPH
+          return 2;         // passive control is of type UI_H_BARGRAPH
         default:
-          return 0;         //return 0, if not a passive Control
+          return 0;         // not a passive control
       }
     }else
       return 0;
@@ -2325,7 +2328,7 @@ int VSTWrapper::getMaxVoices(){
 
 /****************************************************************
  ****************************************************************
- ******************  faust2faustvstqt-Code  *********************
+ ******************  faust2faustvstqt code  *********************
  ****************************************************************
  ****************************************************************/
 
@@ -2346,7 +2349,7 @@ int editorCounter = 0;
 
 /**
  * @brief Editor_faustvstqt::Editor_faustvstqt
- * - beim Erstellen eines Editor-Objektes editorCounter aktualisieren (wegen qApp)
+ * - update editorCounter when creating an editor object (qApp management)
  * @param effect
  */
 Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect), widget(NULL), qtinterface(NULL), hostWindow(NULL){
@@ -2355,13 +2358,17 @@ Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect), widge
 
 /**
  * @brief Editor_faustvstqt::~Editor_faustvstqt
- * - beim Zerstören des Editor-Objektes editorCounter aktualisieren und falls editorCounter==0 qApp löschen
- * - closeAllWindows() nötig um zu verhindern, dass qApp gelöscht werden kann, wenn ein noch offenes Widget exestiert
- * - exit() nötig um zu verhindern, dass processEvents noch läuft, wenn man qApp löscht (sonst Crash)
- * - Problem: editorCounter läuft für jede einzelne Plug-In-Klasse separat und nicht global für alle Plug-Ins.
- *   Deswegen wird qApp immer gelöscht, wenn es keine Instanz einer bestimmten Plug-In-Klasse mehr gibt.
- *   Das führt dazu, dass alle anderen geöffneten Plug-In-Fenster ihren Inhalt verlieren.
- *   Dies ist gelöst, weil sonst der Host aus verschiedenen Gründen crashen könnte.
+ * - update editorCounter when creating an editor object, delete qApp if
+ *   editorCounter==0
+ * - closeAllWindows() is needed to prevent qApp from being deleted if
+ *   open widgets exist
+ * - exit() is needed to keep processEvents from running when qApp is deleted
+ *   (to prevent crashes)
+ * - Problem: editorCounter is maintained separately for each plug-in class
+ *   (not globally for all Faust plug-ins). Therefore qApp is always deleted
+ *   if there's no instance of a certain plug-in class any more, which causes
+ *   all other open plug-in windows to lose their contents. This kludge seems
+ *   to be needed to work around various host crashes for different reasons.
  */
 Editor_faustvstqt::~Editor_faustvstqt(){
     editorCounter--;
@@ -2377,10 +2384,11 @@ Editor_faustvstqt::~Editor_faustvstqt(){
 
 /**
  * @brief Editor_faustvstqt::open
- * - Methode zum Öffnen der Plug-In-GUI
- * - Wenn keine qApp existent ist, muss eine QApplication-Instanz erstellt werden
- * - Die GUI-Oberfläche wird aus faustqt.h generiert (QTGUI()-Klasse)
- * - Kommunikation zwischen GUI-Elementen und dazugehörigen VST-Parametern nach dem Signal-Slot-Prinzip realisiert
+ * - method to open the plug-in GUI
+ * - must create a QApplication instance if no qApp exists
+ * - the GUI is generated through faustqt.h (QTGUI() class)
+ * - communication between GUI elements and the corresponding VST parameters
+ *   is realized using Qt's signal-slot mechanism
  * @param ptr
  * @return
  */
@@ -2407,38 +2415,40 @@ bool Editor_faustvstqt::open(void *ptr){
     qDebug() << "open interface: " << qtinterface;
     dsp->buildUserInterface(qtinterface);
 
-    // Größe von QTGUI aktualisieren nachdem die GUI-Elemente erstellt wurden
+    // update the size of the QTGUI after creating the GUI elements
     qtinterface->adjustSize();
 
-    // das Plug-In-Fenster darf nicht breiter/höher als screenGeometry sein (-80 Pixel Toleranz)
+    // the dimensions of the plug-in window must not exceed screenGeometry
+    // (-80 pixel tolerance)
     int desktopHeight = QApplication::desktop()->screenGeometry().height()-80;
     int desktopWidth  = QApplication::desktop()->screenGeometry().width()-80;
 
     qDebug() << "desktop-height: " << QApplication::desktop()->screenGeometry().height();
     qDebug() << "desktop-width: "  << QApplication::desktop()->screenGeometry().width();
 
-    // Fenstergröße wird festgelegt
+    // determine the window size
     rectangle.top    = 0;
     rectangle.left   = 0;
-    // Plug-In-GUI darf nicht höher sein als die Höhe der Auflösung des Desktops
+    // the height of the plug-in GUI must not exceed the desktop resolution
     if(qtinterface->height() > desktopHeight)
         rectangle.bottom = desktopHeight;
-    else
-        rectangle.bottom = qtinterface->height()+20; // 20 Pixel für Scrollbalken miteinrechnen
-    // Plug-In-GUI darf nicht breiter sein als die Breite der Auflösung des Desktops
+    else // add 20 pixels for scroll bars
+        rectangle.bottom = qtinterface->height()+20;
+    // the width of the plug-in GUI must not exceed the desktop resolution
     if(qtinterface->width() > desktopWidth)
         rectangle.right  = desktopWidth;
-    else
-        rectangle.right  = qtinterface->width()+20; // 20 Pixel für Scrollbalken miteinrechnen
+    else // add 20 pixels for scroll bars
+        rectangle.right  = qtinterface->width()+20;
 
-    // Größe des Widgets anpassen
+    // adjust the widget size
     widget->resize(rectangle.right, rectangle.bottom);
 
-    // erstelle PFaustUI und führe buildUserInterface auf
+    // create the PFaustUI und initialize it using buildUserInterface
     PFaustUI* ui = new PFaustUI();
     dsp->buildUserInterface(ui);
 
-    // Ausgabe der Anzahl der Elemente der PFaustUI und weiterer Information zu den Elementen
+    // debugging output: number of elements of the PFaustUI and other
+    // information about the elements
     qDebug() << "nports: " << ui->nports;
     qDebug() << "nemels: " << ui->nelems;
     for(int i = 0; i < ui->nelems; i++){
@@ -2451,9 +2461,9 @@ bool Editor_faustvstqt::open(void *ptr){
         //}
     }
 
-    // Abfrage, welche UI-Elemente erzeugt wurden (in der Reihenfolge nach der diese erzeugt wurden)
-    /*for(int i = 0; i < ui->nelems; i++){
-        // hier Abfragen, welche Parameter das Plug-In enthält
+#if 0
+    // debugging output: generated UI elements and their order
+    for(int i = 0; i < ui->nelems; i++){
         switch(ui->elems[i].type){
             case UI_BUTTON:
                 std::cout << i << "-UI_BUTTON: " << ui->elems[i].label << std::endl;
@@ -2495,13 +2505,15 @@ bool Editor_faustvstqt::open(void *ptr){
 
         //if(ui->elems[i].type == UI_H_SLIDER)
         //    std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
-    }*/
+    }
+#endif
 
-    // finde alle Kinder von qtinterface vom Typ QObject*
+    // determine all children of qtinterface of type QObject*
     QList<QObject*> allObjects = qtinterface->findChildren<QObject*>();
     qDebug() << "QObjects total count: " << allObjects.count();
 
-    // folgender Abschnitt: falls Instrument-Plug-In mit voice controls, dann entsprechende Kontrollvariablen setzen
+    // following section: if this is an instrument plug-in with voice
+    // controls then set the corresponding control variables
     int freq, gain, gate, freqPort, gainPort, gatePort;
     bool freqBool, gainBool, gateBool;
 
@@ -2541,12 +2553,12 @@ bool Editor_faustvstqt::open(void *ptr){
     int vstDiff = 0;
     bool vstParamSet;
 
-    bool vBargraphChecked = true; // wichtig für numerical-HorizontalBargraph-Suche weiter unten
-    QObject* lastObject;          // wichtig zur Überprüfung bei addNumDisplay
+    bool vBargraphChecked = true; // used in HorizontalBargraph search
+    QObject* lastObject;          // used in addNumDisplay check
 
     for (QList<QObject*>::iterator i = allObjects.begin(); i != allObjects.end(); ++i){
         qDebug("");
-        // Gebe Klassenname des gefunden Objektes aus
+        // debugging output: class name of found object
         qDebug() << "QObject: " << (*i)->metaObject()->className();
         qDebug() << "VST parameter assigned: " << vstParamCount-vstDiff;
 
@@ -2587,17 +2599,18 @@ bool Editor_faustvstqt::open(void *ptr){
             connect(button, SIGNAL(pressed()), this, SLOT(updateVST_buttonPressed()), Qt::QueuedConnection);
             connect(button, SIGNAL(released()), this, SLOT(updateVST_buttonReleased()), Qt::QueuedConnection);
 
-            // wenn GUI geöffnet wird, sollte der Button nicht gedrückt sein
+            // button is released when GUI opens
             effect->setParameter(vstParamCount-vstDiff, 0.0f);
 
             vstParamCount++;
             vstParamSet = true;
         }
 
-        // NumDisplay (Liste) / NumEntry / HorizontalBargraph im numerischen Stil
+        // NumDisplay (list) / NumEntry / numerical HorizontalBargraph
         QDoubleSpinBox* num = qobject_cast<QDoubleSpinBox*>(*i);
         if (num){
-            // QDoubleSpinBox mit NoButtons ignorieren, da keine Liste, sondern NumDisplay
+            // ignore QDoubleSpinBox with NoButtons, as it's not a list but
+            // a NumDisplay
             if(num->buttonSymbols() != QAbstractSpinBox::NoButtons){
                 qDebug("found list!");
                 num->setProperty("vstParam", vstParamCount-vstDiff);
@@ -2609,20 +2622,23 @@ bool Editor_faustvstqt::open(void *ptr){
                 vstParamCount++;
                 vstParamSet = true;
 
-            // wenn dazu vorheriges Control passiv und vBargraphChecked==false: NumDisplay des VerticalBargraphs gefunden
-            // dies wird immer aufgerufen nach dem in der Iteration vorher ein vBargraph gefunden wurde
+            // if previous control is passive and vBargraphChecked==false:
+            // found NumDisplay of VerticalBargraphs
+            // this is always called if we found a vBargraph in the previous
+            // iteration
             }else if(effect->isPassiveControl(vstParamCount-vstDiff-1)==1 && !vBargraphChecked){
                 qDebug("found numDisplay!");
                 num->setProperty("vstParam", vstParamCount-vstDiff-1);
 
                 passiveControls.append(num);
 
-                // die dazugehörige Anzeige des vBargraphs ist jetzt gesetzt
+                // the corresponding diplay of the vBargraphs is now set
                 vBargraphChecked = true;
             }
             else if(effect->isPassiveControl(vstParamCount-vstDiff)==2 && vBargraphChecked){
                 QAbstractSlider* sliderOrKnob = qobject_cast<QAbstractSlider*>(lastObject);
-                // nur wenn gefundenes QObject davor kein Slider oder Knob ist
+                // only if the previously found QObject is neither slider nor
+                // knob
                 if(!sliderOrKnob){
                     qDebug("found horizontal bargraph with numerical style!");
                     num->setProperty("vstParam", vstParamCount-vstDiff);
@@ -2635,7 +2651,7 @@ bool Editor_faustvstqt::open(void *ptr){
             }
         }
 
-        //CheckBox
+        // CheckBox
         QCheckBox* checkBox = qobject_cast<QCheckBox*>(*i);
         if (checkBox){
             qDebug("found checkbox!");
@@ -2643,7 +2659,8 @@ bool Editor_faustvstqt::open(void *ptr){
 
             connect(checkBox, SIGNAL(stateChanged(int)), this, SLOT(updateVST_checkBox()), Qt::QueuedConnection);
 
-            // wenn VST-Parameter der Checkbox kleiner als 0.5, dann ist die CheckBox unchecked
+            // if the VST parameter of the checkbox is less than 0.5 then the
+            // checkbox is unchecked
             if(effect->getParameter(vstParamCount-vstDiff) < 0.5f)
                 checkBox->setChecked(false);
             else
@@ -2680,11 +2697,11 @@ bool Editor_faustvstqt::open(void *ptr){
 
             int radioCount = 0;
             bool valueIsSet = false;
-            // iteriere durch alle Radiobuttons dieser Gruppe
+            // iterate over all radio buttons in this group
             for (QList<QRadioButton*>::iterator r = radiobuttons.begin(); r != radiobuttons.end(); ++r){
                 float minimum = effect->getMinimum(vstParamCount-vstDiff);
                 float maximum = effect->getMaximum(vstParamCount-vstDiff);
-                // setze für updateVST() alle benötigten Properties
+                // set all properties needed for updateVST()
                 (*r)->setProperty("value", radioCount);
                 (*r)->setProperty("vstParam", vstParamCount-vstDiff);
                 (*r)->setProperty("minimum", minimum);
@@ -2692,7 +2709,7 @@ bool Editor_faustvstqt::open(void *ptr){
                 (*r)->setProperty("singleStep", effect->getStep(vstParamCount-vstDiff));
                 connect((*r), SIGNAL(clicked(bool)), this, SLOT(updateVST()), Qt::QueuedConnection);
 
-                // setze den richtigen Radiobutton beim Öffnen der GUI auf "geklickt"
+                // set the proper radio button as "clicked" when the GUI opens
                 if(!valueIsSet){
                     if(valueToVST(radioCount,minimum,maximum)>=effect->getParameter(vstParamCount-vstDiff)){
                         (*r)->click();
@@ -2705,7 +2722,7 @@ bool Editor_faustvstqt::open(void *ptr){
             vstParamSet = true;
         }
 
-        // Menü
+        // Menu
         uiMenu* menu = dynamic_cast<uiMenu*>(*i);
         if (menu){
             qDebug("found menu!");
@@ -2727,7 +2744,8 @@ bool Editor_faustvstqt::open(void *ptr){
             vstParamSet = true;
         }
 
-        // überprüfe, ob Instrument-Plug-In um freq-, gain-, gate-Kontrollelemente zu deaktivieren
+        // check for instrument plug-in in order to deactivate the voice
+        // (freq, gain, gate) control elements
         if(effect->getMaxVoices()>0 && vstParamSet){
             if(freqBool && vstParamCount-1==freqPort){
                 QWidget* guiWid = qobject_cast<QWidget*>(*i);
@@ -2761,7 +2779,7 @@ bool Editor_faustvstqt::open(void *ptr){
                 }
             }
         }
-        // speichere das QObject dieser Iteration
+        // save the QObject of this iteration
         lastObject = (*i);
     }
 
@@ -2769,9 +2787,16 @@ bool Editor_faustvstqt::open(void *ptr){
 
     qtinterface->run();
 
-    // StyleSheet für die GUI kann gesetzt werden
+    // set the style sheet for this GUI, if any
     QString styleSheet("");
+    // The STYLE symbol is set during compilation if the user supplied the
+    // -style option to the faust2faustvstqt script. You can also set this
+    // manually if needed, but note that the corresponding resource needs to
+    // be present in the qmake project (this is taken care of automagically
+    // when using the -style option). Otherwise (or if no style was specified)
+    // the default style will be used. -ag
 #ifdef STYLE
+    // C preprocessor stringify magic to insert the style sheet name
 #define __xstr(s) __str(s)
 #define __str(s) #s
     QFile file(":/" __xstr(STYLE) ".qss");
@@ -2782,7 +2807,7 @@ bool Editor_faustvstqt::open(void *ptr){
 #endif
     qApp->setStyleSheet(styleSheet);
 
-    // Einbinden des Plug-In-Widgets in das vom Host zur Verfügung gestellte Fenster
+    // embed the plug-in widget into the window provided by the host
     hostWindow = QWindow::fromWinId(WId(ptr));
     //qDebug() << "hostWindow: " << hostWindow;
     Display* display = QX11Info::display();
@@ -2794,10 +2819,12 @@ bool Editor_faustvstqt::open(void *ptr){
 
     qDebug() << "Count of passive controls: " << passiveControls.size();
 
-    // connect um sicherzustellen, dass die passiven Kontrollelemente immer geupdatet werden
+    // this connection takes care of updating the passive control elements
     connect(this, SIGNAL(getVSTParameters(QObject*)), this, SLOT(updatePassiveControl(QObject*)), Qt::UniqueConnection);
 
-    // zum Debuggen: welche Objekte rufen bestimmtes Signal auf? Funktioniert nur mit Qt-Debug-Version
+    // debugging output: Which objects trigger a certain signal? This only
+    // works with the debug version of Qt.
+
     //qtinterface->dumpObjectInfo();
     //int QObject::receivers ( const char * signal ) const [protected]
     //qDebug() << "DebugInfo: " << QObject::dumpObjectInfo();
@@ -2807,8 +2834,10 @@ bool Editor_faustvstqt::open(void *ptr){
 
 /**
  * @brief Editor_faustvstqt::idle
- * - idle() wird in einem bestimmten, vom Host festgelegten Zeitintervall aufgerufen um die GUI-Events abzuarbeiten
- * - falls passive Kontrollelemente definiert sind, wird das Signal getVSTParameters(QObject*) ausgesendet
+ * - idle() is called repeatedly at some time interval determined by the host
+ *   to process any pending GUI events
+ * - if there are any passive control elements in the GUI then this also emits
+ *   the getVSTParameters(QObject*) signal
  */
 void Editor_faustvstqt::idle(){
     if (qApp){
@@ -2823,7 +2852,8 @@ void Editor_faustvstqt::idle(){
 
 /**
  * @brief Editor_faustvstqt::close
- * - beim Schließen der Plug-In-GUI werden alle GUI-Elemente zerstört und "passiveControls" geleert
+ * - when closing the plugin GUI, all GUI elements are destroyed and the
+ *   passiveControls vectors is cleared
  */
 void Editor_faustvstqt::close(){
     qtinterface->stop();
@@ -2842,7 +2872,7 @@ void Editor_faustvstqt::close(){
 
 /**
  * @brief Editor_faustvstqt::getRect
- * - benötigter Pointer "rect" um die Größe des Plug-In-Fensters festzulegen
+ * - required pointer "rect" to determine the size of the plug-in window
  * @param rect
  * @return
  */
@@ -2853,7 +2883,7 @@ bool Editor_faustvstqt::getRect (ERect** rect){
 
 /**
  * @brief Editor_faustvstqt::valueToVST
- * - konvertiert einen Wert von der FAUST- in die VST-Repräsentation
+ * - converts a value from the Faust to the VST representation
  * @param value
  * @param minimum
  * @param maximum
@@ -2871,9 +2901,10 @@ float Editor_faustvstqt::valueToVST(double value, double minimum, double maximum
 
 /**
  * @brief Editor_faustvstqt::updateQTGUI
- * - Methode zur Aktualisierung eines GUI-Elementes
- * - wird für GUI-Elemente in open()-Methode aufgerufen
- * - VST-Werte werden nach FAUST-Standard umgerechnet um Position der Slider, Knobs, etc. zu bestimmen
+ * - method to update a GUI element
+ * - called for GUI elements in the open() method
+ * - VST values are converted to Faust ranges to determine the position of
+ *   sliders, knobs, etc.
  * @param object
  * @param value
  */
@@ -2899,7 +2930,8 @@ void Editor_faustvstqt::updateQTGUI(QObject* object, float value){
     if (fabs(newValue) < fabs(step) || fabs(newValue)/fabs(maximum-minimum) < eps)
         newValue = 0.0;
 
-    // setze neues Value mit setProperty("value",..), da setValue() nicht für QObject definiert ist
+    // set new value with setProperty("value",..), as setValue() is not
+    // defined for QObject
     object->setProperty(valueChar, newValue);
     qDebug() << "QTGUI: new Qt value: " << object->property(valueChar).toDouble();
 }
@@ -2909,12 +2941,12 @@ void Editor_faustvstqt::updateQTGUI(QObject* object, float value){
  *******  Slots ********
  ***********************/
 
-// die Slots werden bei Veränderungen an einem GUI-Element (z.B. Bewegen eines Sliders) aufgerufen
-// hier werden dann die entsprechenden VST-Parameter aktualisiert
+// The slots are called in response to interactive changes of a GUI element
+// (e.g., slider movements). Here we update the corresponding VST parameters.
 
 /**
  * @brief Editor_faustvstqt::updateVST_buttonPressed
- * - Slot für das Klicken auf ein Button-Objekt
+ * - slot for pressing a button object
  */
 void Editor_faustvstqt::updateVST_buttonPressed(){
     int vstParam = QObject::sender()->property("vstParam").toInt();
@@ -2928,7 +2960,7 @@ void Editor_faustvstqt::updateVST_buttonPressed(){
 
 /**
  * @brief Editor_faustvstqt::updateVST_buttonReleased
- * - Slot für das Loslassen eines Button-Objektes
+ * - slot for releasing a button object
  */
 void Editor_faustvstqt::updateVST_buttonReleased(){
     int vstParam = QObject::sender()->property("vstParam").toInt();
@@ -2939,13 +2971,13 @@ void Editor_faustvstqt::updateVST_buttonReleased(){
 
 /**
  * @brief Editor_faustvstqt::updateVST_checkBox
- * - Slot für Checkboxen
+ * - slot for check boxes
  */
 void Editor_faustvstqt::updateVST_checkBox(){
     int vstParam = QObject::sender()->property("vstParam").toInt();
     qDebug() << "VST: vstParam: " << vstParam;
 
-    // wenn CheckBox == checked
+    // if CheckBox == checked
     if(QObject::sender()->property("checked").toBool()){
         qDebug("checkbox checked");
         effect->setParameter(vstParam, 1.0f);
@@ -2957,13 +2989,15 @@ void Editor_faustvstqt::updateVST_checkBox(){
 
 /**
  * @brief Editor_faustvstqt::updateVST
- * - Slot für alle anderen aktiven Kontrollelemente (Slider, Knobs, Menüs, Radiobuttons etc.)
+ * - slot for all other active control elements (sliders, knobs, menus, radio
+ *   buttons etc.)
  */
 void Editor_faustvstqt::updateVST(){
     double value, minimum, maximum, step;
     int vstParam;
 
-    // bei einer uiMenu existiert anstelle der Property "value" die Property "currentIndex"
+    // for uiMenu we have the property "currentIndex" instead of the property
+    // "value"
     if (QString(QObject::sender()->metaObject()->className())=="uiMenu")
         value = QObject::sender()->property("currentIndex").toDouble();
     else
@@ -2990,8 +3024,9 @@ void Editor_faustvstqt::updateVST(){
 
 /**
  * @brief Editor_faustvstqt::updatePassiveControl
- * - Slot für die passiven Kontrollelemente (Horizontal/Vertical Bargraphs)
- * - dieser Slot wird bei jedem idle()-Aufruf aufgerufen, wenn das Plug-In passive Kontrollelemente besitzt
+ * - slot for the passive control elements (horizontal/vertical bargraphs)
+ * - this slot is called for each call of idle(), if the plug-in has passive
+ *   control elements
  * @param object
  */
 void Editor_faustvstqt::updatePassiveControl(QObject* object){
@@ -3000,7 +3035,7 @@ void Editor_faustvstqt::updatePassiveControl(QObject* object){
     float maximum  = effect->getMaximum(vstParam);
     float vstValue = effect->getParameter(vstParam);
 
-    // Umstellung der Formel zum Ausrechnen des VST-Wertes nach FAUST-Standard
+    // convert the VST value back to the corresponding Faust value
     float fValue = vstValue*maximum - vstValue*minimum + minimum;
 
     AbstractDisplay* bargraph  = dynamic_cast<AbstractDisplay*>(object);
