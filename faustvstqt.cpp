@@ -2259,70 +2259,78 @@ VstInt32 VSTWrapper::processEvents(VstEvents* events)
  * getter methods needed by the editor class (see open(..))
  ***/
 
-float VSTWrapper::getMinimum(VstInt32 index){
-    int k = plugin->ui[0]->nports;
-    if (index >= 0 && index < k) {
-      int j = plugin->ctrls[index];
-      assert(index == plugin->ui[0]->elems[j].port);
-      float min = plugin->ui[0]->elems[j].min;
-      return min;
-    }else
-      return 0.0f;
+float VSTWrapper::getMinimum(VstInt32 index)
+{
+  int k = plugin->ui[0]->nports;
+  if (index >= 0 && index < k) {
+    int j = plugin->ctrls[index];
+    assert(index == plugin->ui[0]->elems[j].port);
+    float min = plugin->ui[0]->elems[j].min;
+    return min;
+  } else
+    return 0.0f;
 }
 
-float VSTWrapper::getMaximum(VstInt32 index){
-    int k = plugin->ui[0]->nports;
-    if (index >= 0 && index < k) {
-      int j = plugin->ctrls[index];
-      assert(index == plugin->ui[0]->elems[j].port);
-      float max = plugin->ui[0]->elems[j].max;
-      return max;
-    }else
-      return 0.0f;
+float VSTWrapper::getMaximum(VstInt32 index)
+{
+  int k = plugin->ui[0]->nports;
+  if (index >= 0 && index < k) {
+    int j = plugin->ctrls[index];
+    assert(index == plugin->ui[0]->elems[j].port);
+    float max = plugin->ui[0]->elems[j].max;
+    return max;
+  } else
+    return 0.0f;
 }
 
-float VSTWrapper::getStep(VstInt32 index){
-    int k = plugin->ui[0]->nports;
-    if (index >= 0 && index < k) {
-      int j = plugin->ctrls[index];
-      assert(index == plugin->ui[0]->elems[j].port);
-      float step = plugin->ui[0]->elems[j].step;
-      return step;
-    }else
-      return 0.0f;
+float VSTWrapper::getStep(VstInt32 index)
+{
+  int k = plugin->ui[0]->nports;
+  if (index >= 0 && index < k) {
+    int j = plugin->ctrls[index];
+    assert(index == plugin->ui[0]->elems[j].port);
+    float step = plugin->ui[0]->elems[j].step;
+    return step;
+  } else
+    return 0.0f;
 }
 
-int VSTWrapper::isPassiveControl(VstInt32 index){
-    int k = plugin->ui[0]->nports;
-    if (index >= 0 && index < k) {
-      int j = plugin->ctrls[index];
-      assert(index == plugin->ui[0]->elems[j].port);
-      switch (plugin->ui[0]->elems[j].type) {
-        case UI_V_BARGRAPH:
-          return 1;         // passive control is of type UI_V_BARGRAPH
-        case UI_H_BARGRAPH:
-          return 2;         // passive control is of type UI_H_BARGRAPH
-        default:
-          return 0;         // not a passive control
-      }
-    }else
-      return 0;
+int VSTWrapper::isPassiveControl(VstInt32 index)
+{
+  int k = plugin->ui[0]->nports;
+  if (index >= 0 && index < k) {
+    int j = plugin->ctrls[index];
+    assert(index == plugin->ui[0]->elems[j].port);
+    switch (plugin->ui[0]->elems[j].type) {
+    case UI_V_BARGRAPH:
+      return 1;         // passive control is of type UI_V_BARGRAPH
+    case UI_H_BARGRAPH:
+      return 2;         // passive control is of type UI_H_BARGRAPH
+    default:
+      return 0;         // not a passive control
+    }
+  } else
+    return 0;
 }
 
-int VSTWrapper::getFreq(){
-    return plugin->freq;
+int VSTWrapper::getFreq()
+{
+  return plugin->freq;
 }
 
-int VSTWrapper::getGain(){
-    return plugin->gain;
+int VSTWrapper::getGain()
+{
+  return plugin->gain;
 }
 
-int VSTWrapper::getGate(){
-    return plugin->gate;
+int VSTWrapper::getGate()
+{
+  return plugin->gate;
 }
 
-int VSTWrapper::getMaxVoices(){
-    return plugin->maxvoices;
+int VSTWrapper::getMaxVoices()
+{
+  return plugin->maxvoices;
 }
 
 
@@ -2352,8 +2360,10 @@ int editorCounter = 0;
  * - update editorCounter when creating an editor object (qApp management)
  * @param effect
  */
-Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect), widget(NULL), qtinterface(NULL), hostWindow(NULL){
-    editorCounter++;
+Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
+  widget(NULL), qtinterface(NULL), hostWindow(NULL)
+{
+  editorCounter++;
 }
 
 /**
@@ -2370,16 +2380,17 @@ Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect), widge
  *   all other open plug-in windows to lose their contents. This kludge seems
  *   to be needed to work around various host crashes for different reasons.
  */
-Editor_faustvstqt::~Editor_faustvstqt(){
-    editorCounter--;
-    qDebug() << "editorCounter: " << editorCounter;
-    qDebug() << "topWindows: " << qApp->topLevelWindows().size();
-    if(editorCounter==0){
-        qDebug("delete qApp");
-        qApp->closeAllWindows();
-        qApp->exit();
-        delete qApp;
-    }
+Editor_faustvstqt::~Editor_faustvstqt()
+{
+  editorCounter--;
+  qDebug() << "editorCounter: " << editorCounter;
+  qDebug() << "topWindows: " << qApp->topLevelWindows().size();
+  if(editorCounter==0) {
+    qDebug("delete qApp");
+    qApp->closeAllWindows();
+    qApp->exit();
+    delete qApp;
+  }
 }
 
 /**
@@ -2392,444 +2403,464 @@ Editor_faustvstqt::~Editor_faustvstqt(){
  * @param ptr
  * @return
  */
-bool Editor_faustvstqt::open(void *ptr){
-    qDebug() << "open editor: " << ptr;
-    AEffEditor::open(ptr);
+bool Editor_faustvstqt::open(void *ptr)
+{
+  qDebug() << "open editor: " << ptr;
+  AEffEditor::open(ptr);
 
-    if(qApp){
-        qDebug() << "qApp already exists";
-    }else{
-        qDebug() << "qApp is created!";
-        new QApplication(argc, argv);
-    }
+  if(qApp) {
+    qDebug() << "qApp already exists";
+  } else {
+    qDebug() << "qApp is created!";
+    new QApplication(argc, argv);
+  }
 
-    qDebug() << "qApp=" << qApp;
+  qDebug() << "qApp=" << qApp;
 
-    widget = new QScrollArea();
-    widget->setWidgetResizable(true);
-    qtinterface = new QTGUI(widget);
-    widget->setWidget(qtinterface);
+  widget = new QScrollArea();
+  widget->setWidgetResizable(true);
+  qtinterface = new QTGUI(widget);
+  widget->setWidget(qtinterface);
 
-    mydsp* dsp = new mydsp();
+  mydsp* dsp = new mydsp();
 
-    qDebug() << "open interface: " << qtinterface;
-    dsp->buildUserInterface(qtinterface);
+  qDebug() << "open interface: " << qtinterface;
+  dsp->buildUserInterface(qtinterface);
 
-    // update the size of the QTGUI after creating the GUI elements
-    qtinterface->adjustSize();
+  // update the size of the QTGUI after creating the GUI elements
+  qtinterface->adjustSize();
 
-    // the dimensions of the plug-in window must not exceed screenGeometry
-    // (-80 pixel tolerance)
-    int desktopHeight = QApplication::desktop()->screenGeometry().height()-80;
-    int desktopWidth  = QApplication::desktop()->screenGeometry().width()-80;
+  // the dimensions of the plug-in window must not exceed screenGeometry
+  // (-80 pixel tolerance)
+  int desktopHeight = QApplication::desktop()->screenGeometry().height()-80;
+  int desktopWidth  = QApplication::desktop()->screenGeometry().width()-80;
 
-    qDebug() << "desktop-height: " << QApplication::desktop()->screenGeometry().height();
-    qDebug() << "desktop-width: "  << QApplication::desktop()->screenGeometry().width();
+  qDebug() << "desktop-height: " <<
+           QApplication::desktop()->screenGeometry().height();
+  qDebug() << "desktop-width: "  <<
+           QApplication::desktop()->screenGeometry().width();
 
-    // determine the window size
-    rectangle.top    = 0;
-    rectangle.left   = 0;
-    // the height of the plug-in GUI must not exceed the desktop resolution
-    if(qtinterface->height() > desktopHeight)
-        rectangle.bottom = desktopHeight;
-    else // add 20 pixels for scroll bars
-        rectangle.bottom = qtinterface->height()+20;
-    // the width of the plug-in GUI must not exceed the desktop resolution
-    if(qtinterface->width() > desktopWidth)
-        rectangle.right  = desktopWidth;
-    else // add 20 pixels for scroll bars
-        rectangle.right  = qtinterface->width()+20;
+  // determine the window size
+  rectangle.top    = 0;
+  rectangle.left   = 0;
+  // the height of the plug-in GUI must not exceed the desktop resolution
+  if(qtinterface->height() > desktopHeight)
+    rectangle.bottom = desktopHeight;
+  else // add 20 pixels for scroll bars
+    rectangle.bottom = qtinterface->height()+20;
+  // the width of the plug-in GUI must not exceed the desktop resolution
+  if(qtinterface->width() > desktopWidth)
+    rectangle.right  = desktopWidth;
+  else // add 20 pixels for scroll bars
+    rectangle.right  = qtinterface->width()+20;
 
-    // adjust the widget size
-    widget->resize(rectangle.right, rectangle.bottom);
+  // adjust the widget size
+  widget->resize(rectangle.right, rectangle.bottom);
 
-    // create the PFaustUI und initialize it using buildUserInterface
-    PFaustUI* ui = new PFaustUI();
-    dsp->buildUserInterface(ui);
+  // create the PFaustUI und initialize it using buildUserInterface
+  PFaustUI* ui = new PFaustUI();
+  dsp->buildUserInterface(ui);
 
-    // debugging output: number of elements of the PFaustUI and other
-    // information about the elements
-    qDebug() << "nports: " << ui->nports;
-    qDebug() << "nemels: " << ui->nelems;
-    for(int i = 0; i < ui->nelems; i++){
-        //if(ui->elems[i].port >= 0){
-            qDebug() << "nelems: " << i;
-            qDebug() << "port: " << ui->elems[i].port;
-            qDebug() << "label: " << ui->elems[i].label;
-            qDebug() << "type: " << ui->elems[i].type;
-            qDebug("");
-        //}
-    }
+  // debugging output: number of elements of the PFaustUI and other
+  // information about the elements
+  qDebug() << "nports: " << ui->nports;
+  qDebug() << "nemels: " << ui->nelems;
+  for(int i = 0; i < ui->nelems; i++) {
+    //if(ui->elems[i].port >= 0){
+    qDebug() << "nelems: " << i;
+    qDebug() << "port: " << ui->elems[i].port;
+    qDebug() << "label: " << ui->elems[i].label;
+    qDebug() << "type: " << ui->elems[i].type;
+    qDebug("");
+    //}
+  }
 
 #if 0
-    // debugging output: generated UI elements and their order
-    for(int i = 0; i < ui->nelems; i++){
-        switch(ui->elems[i].type){
-            case UI_BUTTON:
-                std::cout << i << "-UI_BUTTON: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_CHECK_BUTTON:
-                std::cout << i << "-UI_CHECK_BUTTON: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_V_SLIDER:
-                std::cout << i << "-UI_V_SLIDER: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_H_SLIDER:
-                std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_NUM_ENTRY:
-                std::cout << i << "-UI_NUM_ENTRY: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_V_BARGRAPH:
-                std::cout << i << "-UI_V_BARGRAPH: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_H_BARGRAPH:
-                std::cout << i << "-UI_H_BARGRAPH: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_END_GROUP:
-                std::cout << i << "-UI_END_GROUP" << std::endl;
-                break;
-            case UI_V_GROUP:
-                std::cout << i << "-UI_V_GROUP: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_H_GROUP:
-                std::cout << i << "-UI_H_GROUP: " << ui->elems[i].label << std::endl;
-                break;
-            case UI_T_GROUP:
-                std::cout << i << "-UI_T_GROUP: " << ui->elems[i].label << std::endl;
-                break;
-            default:
-                std::cout << i << " ist kein gültiges Element." << std::endl;
-                break;
-        }
-
-        //if(ui->elems[i].type == UI_H_SLIDER)
-        //    std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
+  // debugging output: generated UI elements and their order
+  for(int i = 0; i < ui->nelems; i++) {
+    switch(ui->elems[i].type) {
+    case UI_BUTTON:
+      std::cout << i << "-UI_BUTTON: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_CHECK_BUTTON:
+      std::cout << i << "-UI_CHECK_BUTTON: " << ui->elems[i].label
+		<< std::endl;
+      break;
+    case UI_V_SLIDER:
+      std::cout << i << "-UI_V_SLIDER: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_H_SLIDER:
+      std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_NUM_ENTRY:
+      std::cout << i << "-UI_NUM_ENTRY: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_V_BARGRAPH:
+      std::cout << i << "-UI_V_BARGRAPH: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_H_BARGRAPH:
+      std::cout << i << "-UI_H_BARGRAPH: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_END_GROUP:
+      std::cout << i << "-UI_END_GROUP" << std::endl;
+      break;
+    case UI_V_GROUP:
+      std::cout << i << "-UI_V_GROUP: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_H_GROUP:
+      std::cout << i << "-UI_H_GROUP: " << ui->elems[i].label << std::endl;
+      break;
+    case UI_T_GROUP:
+      std::cout << i << "-UI_T_GROUP: " << ui->elems[i].label << std::endl;
+      break;
+    default:
+      std::cout << i << " ist kein gültiges Element." << std::endl;
+      break;
     }
+
+    //if(ui->elems[i].type == UI_H_SLIDER)
+    //    std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
+  }
 #endif
 
-    // determine all children of qtinterface of type QObject*
-    QList<QObject*> allObjects = qtinterface->findChildren<QObject*>();
-    qDebug() << "QObjects total count: " << allObjects.count();
+  // determine all children of qtinterface of type QObject*
+  QList<QObject*> allObjects = qtinterface->findChildren<QObject*>();
+  qDebug() << "QObjects total count: " << allObjects.count();
 
-    // following section: if this is an instrument plug-in with voice
-    // controls then set the corresponding control variables
-    int freq, gain, gate, freqPort, gainPort, gatePort;
-    bool freqBool, gainBool, gateBool;
+  // following section: if this is an instrument plug-in with voice
+  // controls then set the corresponding control variables
+  int freq, gain, gate, freqPort, gainPort, gatePort;
+  bool freqBool, gainBool, gateBool;
 
-    qDebug() << "maxvoices: " << effect->getMaxVoices();
+  qDebug() << "maxvoices: " << effect->getMaxVoices();
 
-    if(effect->getMaxVoices()>0){
-        freqBool = false;
-        gainBool = false;
-        gateBool = false;
+  if(effect->getMaxVoices()>0) {
+    freqBool = false;
+    gainBool = false;
+    gateBool = false;
 
-        qDebug("instrument plug-in");
-        if(effect->getFreq()!=-1){
-            freq = effect->getFreq();
-            freqPort = ui->elems[freq].port;
-            freqBool = true;
-            qDebug() << "freq: " << freq;
-            qDebug() << "freq port: " << freqPort;
-        }
-        if(effect->getGain()!=-1){
-            gain = effect->getGain();
-            gainPort = ui->elems[gain].port;
-            gainBool = true;
-            qDebug() << "gain: " << gain;
-            qDebug() << "gain port: " << gainPort;
-        }
-        if(effect->getGate()!=-1){
-            gate = effect->getGate();
-            gatePort = ui->elems[gate].port;
-            gateBool = true;
-            qDebug() << "gate: " << gate;
-            qDebug() << "gate port: " << gatePort;
-        }
-    }else
-        qDebug("effect plug-in");
+    qDebug("instrument plug-in");
+    if(effect->getFreq()!=-1) {
+      freq = effect->getFreq();
+      freqPort = ui->elems[freq].port;
+      freqBool = true;
+      qDebug() << "freq: " << freq;
+      qDebug() << "freq port: " << freqPort;
+    }
+    if(effect->getGain()!=-1) {
+      gain = effect->getGain();
+      gainPort = ui->elems[gain].port;
+      gainBool = true;
+      qDebug() << "gain: " << gain;
+      qDebug() << "gain port: " << gainPort;
+    }
+    if(effect->getGate()!=-1) {
+      gate = effect->getGate();
+      gatePort = ui->elems[gate].port;
+      gateBool = true;
+      qDebug() << "gate: " << gate;
+      qDebug() << "gate port: " << gatePort;
+    }
+  } else
+    qDebug("effect plug-in");
 
-    int vstParamCount = 0;
-    int vstDiff = 0;
-    bool vstParamSet;
+  int vstParamCount = 0;
+  int vstDiff = 0;
+  bool vstParamSet;
 
-    bool vBargraphChecked = true; // used in HorizontalBargraph search
-    QObject* lastObject;          // used in addNumDisplay check
+  bool vBargraphChecked = true; // used in HorizontalBargraph search
+  QObject* lastObject;          // used in addNumDisplay check
 
-    for (QList<QObject*>::iterator i = allObjects.begin(); i != allObjects.end(); ++i){
-        qDebug("");
-        // debugging output: class name of found object
-        qDebug() << "QObject: " << (*i)->metaObject()->className();
-        qDebug() << "VST parameter assigned: " << vstParamCount-vstDiff;
+  for (QList<QObject*>::iterator i = allObjects.begin(); i != allObjects.end();
+       ++i) {
+    qDebug("");
+    // debugging output: class name of found object
+    qDebug() << "QObject: " << (*i)->metaObject()->className();
+    qDebug() << "VST parameter assigned: " << vstParamCount-vstDiff;
 
-        vstParamSet = false;
+    vstParamSet = false;
 
-        // Slider
-        QSlider* slider = qobject_cast<QSlider*>(*i);
-        if (slider){
-            qDebug("found slider!");
-            slider->setProperty("vstParam", vstParamCount-vstDiff);
+    // Slider
+    QSlider* slider = qobject_cast<QSlider*>(*i);
+    if (slider) {
+      qDebug("found slider!");
+      slider->setProperty("vstParam", vstParamCount-vstDiff);
 
-            connect(slider, SIGNAL(valueChanged(int)), this, SLOT(updateVST()), Qt::QueuedConnection);
-            updateQTGUI(slider, effect->getParameter(vstParamCount-vstDiff));
+      connect(slider, SIGNAL(valueChanged(int)), this, SLOT(updateVST()),
+              Qt::QueuedConnection);
+      updateQTGUI(slider, effect->getParameter(vstParamCount-vstDiff));
 
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // Knob
-        QDial* dial = qobject_cast<QDial*>(*i);
-        if (dial){
-            qDebug("found knob!");
-            dial->setProperty("vstParam", vstParamCount-vstDiff);
-
-            connect(dial, SIGNAL(valueChanged(int)), this, SLOT(updateVST()), Qt::QueuedConnection);
-            updateQTGUI(dial, effect->getParameter(vstParamCount-vstDiff));
-
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // Button
-        QPushButton* button = qobject_cast<QPushButton*>(*i);
-        if (button){
-            qDebug("found button!");
-            button->setProperty("vstParam", vstParamCount-vstDiff);
-
-            connect(button, SIGNAL(pressed()), this, SLOT(updateVST_buttonPressed()), Qt::QueuedConnection);
-            connect(button, SIGNAL(released()), this, SLOT(updateVST_buttonReleased()), Qt::QueuedConnection);
-
-            // button is released when GUI opens
-            effect->setParameter(vstParamCount-vstDiff, 0.0f);
-
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // NumDisplay (list) / NumEntry / numerical HorizontalBargraph
-        QDoubleSpinBox* num = qobject_cast<QDoubleSpinBox*>(*i);
-        if (num){
-            // ignore QDoubleSpinBox with NoButtons, as it's not a list but
-            // a NumDisplay
-            if(num->buttonSymbols() != QAbstractSpinBox::NoButtons){
-                qDebug("found list!");
-                num->setProperty("vstParam", vstParamCount-vstDiff);
-
-                connect(num, SIGNAL(valueChanged(double)), this, SLOT(updateVST()), Qt::QueuedConnection);
-
-                updateQTGUI(num, effect->getParameter(vstParamCount-vstDiff));
-
-                vstParamCount++;
-                vstParamSet = true;
-
-            // if previous control is passive and vBargraphChecked==false:
-            // found NumDisplay of VerticalBargraphs
-            // this is always called if we found a vBargraph in the previous
-            // iteration
-            }else if(effect->isPassiveControl(vstParamCount-vstDiff-1)==1 && !vBargraphChecked){
-                qDebug("found numDisplay!");
-                num->setProperty("vstParam", vstParamCount-vstDiff-1);
-
-                passiveControls.append(num);
-
-                // the corresponding diplay of the vBargraphs is now set
-                vBargraphChecked = true;
-            }
-            else if(effect->isPassiveControl(vstParamCount-vstDiff)==2 && vBargraphChecked){
-                QAbstractSlider* sliderOrKnob = qobject_cast<QAbstractSlider*>(lastObject);
-                // only if the previously found QObject is neither slider nor
-                // knob
-                if(!sliderOrKnob){
-                    qDebug("found horizontal bargraph with numerical style!");
-                    num->setProperty("vstParam", vstParamCount-vstDiff);
-
-                    passiveControls.append(num);
-
-                    vstParamCount++;
-                    vstParamSet = true;
-                }
-            }
-        }
-
-        // CheckBox
-        QCheckBox* checkBox = qobject_cast<QCheckBox*>(*i);
-        if (checkBox){
-            qDebug("found checkbox!");
-            checkBox->setProperty("vstParam", vstParamCount-vstDiff);
-
-            connect(checkBox, SIGNAL(stateChanged(int)), this, SLOT(updateVST_checkBox()), Qt::QueuedConnection);
-
-            // if the VST parameter of the checkbox is less than 0.5 then the
-            // checkbox is unchecked
-            if(effect->getParameter(vstParamCount-vstDiff) < 0.5f)
-                checkBox->setChecked(false);
-            else
-                checkBox->setChecked(true);
-
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // Bargraph
-        AbstractDisplay* bargraph = dynamic_cast<AbstractDisplay*>(*i);
-        if (bargraph){
-            if(effect->isPassiveControl(vstParamCount-vstDiff)==1){
-                qDebug("found vertical bargraph!");
-                vBargraphChecked = false;
-            }else
-                qDebug("found horizontal bargraph!");
-
-            bargraph->setProperty("vstParam", vstParamCount-vstDiff);
-            //led->setProperty("elemType", "led");
-
-            passiveControls.append(bargraph);
-
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // Radiobuttons
-        uiRadioButtons* uiRadio = dynamic_cast<uiRadioButtons*>(*i);
-        if (uiRadio){
-            qDebug("found radio buttons!");
-
-            QList<QRadioButton*> radiobuttons = uiRadio->findChildren<QRadioButton*>();
-
-            int radioCount = 0;
-            bool valueIsSet = false;
-            // iterate over all radio buttons in this group
-            for (QList<QRadioButton*>::iterator r = radiobuttons.begin(); r != radiobuttons.end(); ++r){
-                float minimum = effect->getMinimum(vstParamCount-vstDiff);
-                float maximum = effect->getMaximum(vstParamCount-vstDiff);
-                // set all properties needed for updateVST()
-                (*r)->setProperty("value", radioCount);
-                (*r)->setProperty("vstParam", vstParamCount-vstDiff);
-                (*r)->setProperty("minimum", minimum);
-                (*r)->setProperty("maximum", maximum);
-                (*r)->setProperty("singleStep", effect->getStep(vstParamCount-vstDiff));
-                connect((*r), SIGNAL(clicked(bool)), this, SLOT(updateVST()), Qt::QueuedConnection);
-
-                // set the proper radio button as "clicked" when the GUI opens
-                if(!valueIsSet){
-                    if(valueToVST(radioCount,minimum,maximum)>=effect->getParameter(vstParamCount-vstDiff)){
-                        (*r)->click();
-                        valueIsSet = true;
-                    }
-                }
-                radioCount++;
-            }
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // Menu
-        uiMenu* menu = dynamic_cast<uiMenu*>(*i);
-        if (menu){
-            qDebug("found menu!");
-
-            float minimum = effect->getMinimum(vstParamCount-vstDiff);
-            float maximum = effect->getMaximum(vstParamCount-vstDiff);
-
-            menu->setProperty("vstParam", vstParamCount-vstDiff);
-            menu->setProperty("minimum", minimum);
-            menu->setProperty("maximum", maximum);
-            menu->setProperty("singleStep", effect->getStep(vstParamCount-vstDiff));
-
-            connect(menu, SIGNAL(activated(int)), this, SLOT(updateVST()), Qt::QueuedConnection);
-
-            updateQTGUI(menu, effect->getParameter(vstParamCount-vstDiff));
-            menu->updateZone(0);    // updates the currentIndex
-
-            vstParamCount++;
-            vstParamSet = true;
-        }
-
-        // check for instrument plug-in in order to deactivate the voice
-        // (freq, gain, gate) control elements
-        if(effect->getMaxVoices()>0 && vstParamSet){
-            if(freqBool && vstParamCount-1==freqPort){
-                QWidget* guiWid = qobject_cast<QWidget*>(*i);
-                if(guiWid){
-                    freqBool = false;
-                    vstDiff++;
-                    qDebug() << "found freq parameter, deactivating widget!";
-                    //guiWid->close();
-                    //guiWid->disconnect();
-                    guiWid->setDisabled(true);
-                }
-            }else if(gainBool && vstParamCount-1==gainPort){
-                QWidget* guiWid = qobject_cast<QWidget*>(*i);
-                if(guiWid){
-                    gainBool = false;
-                    vstDiff++;
-                    qDebug() << "found gain parameter, deactivating widget!";
-                    //guiWid->close();
-                    //guiWid->disconnect();
-                    guiWid->setDisabled(true);
-                }
-            }else if(gateBool && vstParamCount-1==gatePort){
-                QWidget* guiWid = qobject_cast<QWidget*>(*i);
-                if(guiWid){
-                    gateBool = false;
-                    vstDiff++;
-                    qDebug() << "found gate parameter, deactivating widget!";
-                    //guiWid->close();
-                    //guiWid->disconnect();
-                    guiWid->setDisabled(true);
-                }
-            }
-        }
-        // save the QObject of this iteration
-        lastObject = (*i);
+      vstParamCount++;
+      vstParamSet = true;
     }
 
-    qDebug() << "VST Parameter assigned: " << vstParamCount-vstDiff;
+    // Knob
+    QDial* dial = qobject_cast<QDial*>(*i);
+    if (dial) {
+      qDebug("found knob!");
+      dial->setProperty("vstParam", vstParamCount-vstDiff);
 
-    qtinterface->run();
+      connect(dial, SIGNAL(valueChanged(int)), this, SLOT(updateVST()),
+              Qt::QueuedConnection);
+      updateQTGUI(dial, effect->getParameter(vstParamCount-vstDiff));
 
-    // set the style sheet for this GUI, if any
-    QString styleSheet("");
-    // The STYLE symbol is set during compilation if the user supplied the
-    // -style option to the faust2faustvstqt script. You can also set this
-    // manually if needed, but note that the corresponding resource needs to
-    // be present in the qmake project (this is taken care of automagically
-    // when using the -style option). Otherwise (or if no style was specified)
-    // the default style will be used. -ag
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // Button
+    QPushButton* button = qobject_cast<QPushButton*>(*i);
+    if (button) {
+      qDebug("found button!");
+      button->setProperty("vstParam", vstParamCount-vstDiff);
+
+      connect(button, SIGNAL(pressed()), this,
+	      SLOT(updateVST_buttonPressed()), Qt::QueuedConnection);
+      connect(button, SIGNAL(released()), this,
+	      SLOT(updateVST_buttonReleased()), Qt::QueuedConnection);
+
+      // button is released when GUI opens
+      effect->setParameter(vstParamCount-vstDiff, 0.0f);
+
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // NumDisplay (list) / NumEntry / numerical HorizontalBargraph
+    QDoubleSpinBox* num = qobject_cast<QDoubleSpinBox*>(*i);
+    if (num) {
+      // ignore QDoubleSpinBox with NoButtons, as it's not a list but
+      // a NumDisplay
+      if(num->buttonSymbols() != QAbstractSpinBox::NoButtons) {
+        qDebug("found list!");
+        num->setProperty("vstParam", vstParamCount-vstDiff);
+
+        connect(num, SIGNAL(valueChanged(double)), this, SLOT(updateVST()),
+                Qt::QueuedConnection);
+
+        updateQTGUI(num, effect->getParameter(vstParamCount-vstDiff));
+
+        vstParamCount++;
+        vstParamSet = true;
+
+        // if previous control is passive and vBargraphChecked==false:
+        // found NumDisplay of VerticalBargraphs
+        // this is always called if we found a vBargraph in the previous
+        // iteration
+      } else if(effect->isPassiveControl(vstParamCount-vstDiff-1)==1
+                && !vBargraphChecked) {
+        qDebug("found numDisplay!");
+        num->setProperty("vstParam", vstParamCount-vstDiff-1);
+
+        passiveControls.append(num);
+
+        // the corresponding diplay of the vBargraphs is now set
+        vBargraphChecked = true;
+      } else if(effect->isPassiveControl(vstParamCount-vstDiff)==2
+                && vBargraphChecked) {
+        QAbstractSlider* sliderOrKnob =
+	  qobject_cast<QAbstractSlider*>(lastObject);
+        // only if the previously found QObject is neither slider nor
+        // knob
+        if(!sliderOrKnob) {
+          qDebug("found horizontal bargraph with numerical style!");
+          num->setProperty("vstParam", vstParamCount-vstDiff);
+
+          passiveControls.append(num);
+
+          vstParamCount++;
+          vstParamSet = true;
+        }
+      }
+    }
+
+    // CheckBox
+    QCheckBox* checkBox = qobject_cast<QCheckBox*>(*i);
+    if (checkBox) {
+      qDebug("found checkbox!");
+      checkBox->setProperty("vstParam", vstParamCount-vstDiff);
+
+      connect(checkBox, SIGNAL(stateChanged(int)), this,
+	      SLOT(updateVST_checkBox()), Qt::QueuedConnection);
+
+      // if the VST parameter of the checkbox is less than 0.5 then the
+      // checkbox is unchecked
+      if(effect->getParameter(vstParamCount-vstDiff) < 0.5f)
+        checkBox->setChecked(false);
+      else
+        checkBox->setChecked(true);
+
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // Bargraph
+    AbstractDisplay* bargraph = dynamic_cast<AbstractDisplay*>(*i);
+    if (bargraph) {
+      if(effect->isPassiveControl(vstParamCount-vstDiff)==1) {
+        qDebug("found vertical bargraph!");
+        vBargraphChecked = false;
+      } else
+        qDebug("found horizontal bargraph!");
+
+      bargraph->setProperty("vstParam", vstParamCount-vstDiff);
+      //led->setProperty("elemType", "led");
+
+      passiveControls.append(bargraph);
+
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // Radiobuttons
+    uiRadioButtons* uiRadio = dynamic_cast<uiRadioButtons*>(*i);
+    if (uiRadio) {
+      qDebug("found radio buttons!");
+
+      QList<QRadioButton*> radiobuttons =
+	uiRadio->findChildren<QRadioButton*>();
+
+      int radioCount = 0;
+      bool valueIsSet = false;
+      // iterate over all radio buttons in this group
+      for (QList<QRadioButton*>::iterator r = radiobuttons.begin();
+           r != radiobuttons.end(); ++r) {
+        float minimum = effect->getMinimum(vstParamCount-vstDiff);
+        float maximum = effect->getMaximum(vstParamCount-vstDiff);
+        // set all properties needed for updateVST()
+        (*r)->setProperty("value", radioCount);
+        (*r)->setProperty("vstParam", vstParamCount-vstDiff);
+        (*r)->setProperty("minimum", minimum);
+        (*r)->setProperty("maximum", maximum);
+        (*r)->setProperty("singleStep",
+			  effect->getStep(vstParamCount-vstDiff));
+        connect((*r), SIGNAL(clicked(bool)), this, SLOT(updateVST()),
+                Qt::QueuedConnection);
+
+        // set the proper radio button as "clicked" when the GUI opens
+        if(!valueIsSet) {
+          if(valueToVST(radioCount,minimum,maximum) >=
+	     effect->getParameter(vstParamCount-vstDiff)) {
+            (*r)->click();
+            valueIsSet = true;
+          }
+        }
+        radioCount++;
+      }
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // Menu
+    uiMenu* menu = dynamic_cast<uiMenu*>(*i);
+    if (menu) {
+      qDebug("found menu!");
+
+      float minimum = effect->getMinimum(vstParamCount-vstDiff);
+      float maximum = effect->getMaximum(vstParamCount-vstDiff);
+
+      menu->setProperty("vstParam", vstParamCount-vstDiff);
+      menu->setProperty("minimum", minimum);
+      menu->setProperty("maximum", maximum);
+      menu->setProperty("singleStep", effect->getStep(vstParamCount-vstDiff));
+
+      connect(menu, SIGNAL(activated(int)), this, SLOT(updateVST()),
+              Qt::QueuedConnection);
+
+      updateQTGUI(menu, effect->getParameter(vstParamCount-vstDiff));
+      menu->updateZone(0);    // updates the currentIndex
+
+      vstParamCount++;
+      vstParamSet = true;
+    }
+
+    // check for instrument plug-in in order to deactivate the voice
+    // (freq, gain, gate) control elements
+    if(effect->getMaxVoices()>0 && vstParamSet) {
+      if(freqBool && vstParamCount-1==freqPort) {
+        QWidget* guiWid = qobject_cast<QWidget*>(*i);
+        if(guiWid) {
+          freqBool = false;
+          vstDiff++;
+          qDebug() << "found freq parameter, deactivating widget!";
+          //guiWid->close();
+          //guiWid->disconnect();
+          guiWid->setDisabled(true);
+        }
+      } else if(gainBool && vstParamCount-1==gainPort) {
+        QWidget* guiWid = qobject_cast<QWidget*>(*i);
+        if(guiWid) {
+          gainBool = false;
+          vstDiff++;
+          qDebug() << "found gain parameter, deactivating widget!";
+          //guiWid->close();
+          //guiWid->disconnect();
+          guiWid->setDisabled(true);
+        }
+      } else if(gateBool && vstParamCount-1==gatePort) {
+        QWidget* guiWid = qobject_cast<QWidget*>(*i);
+        if(guiWid) {
+          gateBool = false;
+          vstDiff++;
+          qDebug() << "found gate parameter, deactivating widget!";
+          //guiWid->close();
+          //guiWid->disconnect();
+          guiWid->setDisabled(true);
+        }
+      }
+    }
+    // save the QObject of this iteration
+    lastObject = (*i);
+  }
+
+  qDebug() << "VST Parameter assigned: " << vstParamCount-vstDiff;
+
+  qtinterface->run();
+
+  // set the style sheet for this GUI, if any
+  QString styleSheet("");
+  // The STYLE symbol is set during compilation if the user supplied the
+  // -style option to the faust2faustvstqt script. You can also set this
+  // manually if needed, but note that the corresponding resource needs to
+  // be present in the qmake project (this is taken care of automagically
+  // when using the -style option). Otherwise (or if no style was specified)
+  // the default style will be used. -ag
 #ifdef STYLE
-    // C preprocessor stringify magic to insert the style sheet name
+  // C preprocessor stringify magic to insert the style sheet name
 #define __xstr(s) __str(s)
 #define __str(s) #s
-    QFile file(":/" __xstr(STYLE) ".qss");
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-      styleSheet = QLatin1String(file.readAll());
-      file.close();
-    }
+  QFile file(":/" __xstr(STYLE) ".qss");
+  if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    styleSheet = QLatin1String(file.readAll());
+    file.close();
+  }
 #endif
-    qApp->setStyleSheet(styleSheet);
+  qApp->setStyleSheet(styleSheet);
 
-    // embed the plug-in widget into the window provided by the host
-    hostWindow = QWindow::fromWinId(WId(ptr));
-    //qDebug() << "hostWindow: " << hostWindow;
-    Display* display = QX11Info::display();
-    XReparentWindow(display, widget->winId(), hostWindow->winId(), 0, 0);
-    XMapWindow(display, hostWindow->winId());
-    XFlush(display);
+  // embed the plug-in widget into the window provided by the host
+  hostWindow = QWindow::fromWinId(WId(ptr));
+  //qDebug() << "hostWindow: " << hostWindow;
+  Display* display = QX11Info::display();
+  XReparentWindow(display, widget->winId(), hostWindow->winId(), 0, 0);
+  XMapWindow(display, hostWindow->winId());
+  XFlush(display);
 
-    widget->show();
+  widget->show();
 
-    qDebug() << "Count of passive controls: " << passiveControls.size();
+  qDebug() << "Count of passive controls: " << passiveControls.size();
 
-    // this connection takes care of updating the passive control elements
-    connect(this, SIGNAL(getVSTParameters(QObject*)), this, SLOT(updatePassiveControl(QObject*)), Qt::UniqueConnection);
+  // this connection takes care of updating the passive control elements
+  connect(this, SIGNAL(getVSTParameters(QObject*)), this,
+          SLOT(updatePassiveControl(QObject*)), Qt::UniqueConnection);
 
-    // debugging output: Which objects trigger a certain signal? This only
-    // works with the debug version of Qt.
+  // debugging output: Which objects trigger a certain signal? This only
+  // works with the debug version of Qt.
 
-    //qtinterface->dumpObjectInfo();
-    //int QObject::receivers ( const char * signal ) const [protected]
-    //qDebug() << "DebugInfo: " << QObject::dumpObjectInfo();
+  //qtinterface->dumpObjectInfo();
+  //int QObject::receivers ( const char * signal ) const [protected]
+  //qDebug() << "DebugInfo: " << QObject::dumpObjectInfo();
 
-    return true;
+  return true;
 }
 
 /**
@@ -2839,15 +2870,15 @@ bool Editor_faustvstqt::open(void *ptr){
  * - if there are any passive control elements in the GUI then this also emits
  *   the getVSTParameters(QObject*) signal
  */
-void Editor_faustvstqt::idle(){
-    if (qApp){
-        QApplication::processEvents();
-        for (int i = 0; i < passiveControls.size(); ++i) {
-            emit getVSTParameters(passiveControls.at(i));
-        }
+void Editor_faustvstqt::idle()
+{
+  if (qApp) {
+    QApplication::processEvents();
+    for (int i = 0; i < passiveControls.size(); ++i) {
+      emit getVSTParameters(passiveControls.at(i));
     }
-    else
-        qDebug("qApp ERROR! QApplication doesn't exist!");
+  } else
+    qDebug("qApp ERROR! QApplication doesn't exist!");
 }
 
 /**
@@ -2855,19 +2886,20 @@ void Editor_faustvstqt::idle(){
  * - when closing the plugin GUI, all GUI elements are destroyed and the
  *   passiveControls vectors is cleared
  */
-void Editor_faustvstqt::close(){
-    qtinterface->stop();
+void Editor_faustvstqt::close()
+{
+  qtinterface->stop();
 
-    delete qtinterface;
-    qtinterface = NULL;
-    delete widget;
-    widget = NULL;
-    delete hostWindow;
-    hostWindow = NULL;
-    passiveControls.clear();
+  delete qtinterface;
+  qtinterface = NULL;
+  delete widget;
+  widget = NULL;
+  delete hostWindow;
+  hostWindow = NULL;
+  passiveControls.clear();
 
-    qDebug("close editor");
-    AEffEditor::close();
+  qDebug("close editor");
+  AEffEditor::close();
 }
 
 /**
@@ -2876,9 +2908,10 @@ void Editor_faustvstqt::close(){
  * @param rect
  * @return
  */
-bool Editor_faustvstqt::getRect (ERect** rect){
-    *rect = &rectangle;
-    return true;
+bool Editor_faustvstqt::getRect (ERect** rect)
+{
+  *rect = &rectangle;
+  return true;
 }
 
 /**
@@ -2889,14 +2922,16 @@ bool Editor_faustvstqt::getRect (ERect** rect){
  * @param maximum
  * @return
  */
-float Editor_faustvstqt::valueToVST(double value, double minimum, double maximum){
-    float newFloat = 0.f;
-    if(minimum==maximum)
-        return newFloat;
-    else{
-        newFloat = (value-minimum) / (maximum-minimum);
-        return newFloat;
-    }
+float Editor_faustvstqt::valueToVST(double value, double minimum,
+                                    double maximum)
+{
+  float newFloat = 0.f;
+  if(minimum==maximum)
+    return newFloat;
+  else {
+    newFloat = (value-minimum) / (maximum-minimum);
+    return newFloat;
+  }
 }
 
 /**
@@ -2908,32 +2943,37 @@ float Editor_faustvstqt::valueToVST(double value, double minimum, double maximum
  * @param object
  * @param value
  */
-void Editor_faustvstqt::updateQTGUI(QObject* object, float value){
-    const double eps = 1e-5;
-    double minimum, maximum, step, newValue;
-    char* valueChar;
+void Editor_faustvstqt::updateQTGUI(QObject* object, float value)
+{
+  const double eps = 1e-5;
+  double minimum, maximum, step, newValue;
+  char* valueChar;
 
-    if (QString(object->metaObject()->className())=="uiMenu")
-        valueChar = "currentIndex";
-    else
-        valueChar = "value";
+  if (QString(object->metaObject()->className())=="uiMenu")
+    valueChar = "currentIndex";
+  else
+    valueChar = "value";
 
-    minimum = object->property("minimum").toDouble();
-    maximum = object->property("maximum").toDouble();
-    step    = object->property("singleStep").toDouble();
+  minimum = object->property("minimum").toDouble();
+  maximum = object->property("maximum").toDouble();
+  step    = object->property("singleStep").toDouble();
 
-    qDebug() << "QTGUI: VST value: "       << value;
-    qDebug() << "QTGUI: old Qt value: "  << object->property(valueChar).toDouble();
+  qDebug() << "QTGUI: VST value: " << value;
+  qDebug() << "QTGUI: old Qt value: "
+	   << object->property(valueChar).toDouble();
 
-    newValue = (minimum==maximum)?minimum : minimum+quantize(value*(maximum-minimum), step);
+  newValue = (minimum==maximum)?minimum : minimum+quantize(value*
+             (maximum-minimum), step);
 
-    if (fabs(newValue) < fabs(step) || fabs(newValue)/fabs(maximum-minimum) < eps)
-        newValue = 0.0;
+  if (fabs(newValue) < fabs(step) ||
+      fabs(newValue)/fabs(maximum-minimum) < eps)
+    newValue = 0.0;
 
-    // set new value with setProperty("value",..), as setValue() is not
-    // defined for QObject
-    object->setProperty(valueChar, newValue);
-    qDebug() << "QTGUI: new Qt value: " << object->property(valueChar).toDouble();
+  // set new value with setProperty("value",..), as setValue() is not
+  // defined for QObject
+  object->setProperty(valueChar, newValue);
+  qDebug() << "QTGUI: new Qt value: "
+	   << object->property(valueChar).toDouble();
 }
 
 
@@ -2948,43 +2988,46 @@ void Editor_faustvstqt::updateQTGUI(QObject* object, float value){
  * @brief Editor_faustvstqt::updateVST_buttonPressed
  * - slot for pressing a button object
  */
-void Editor_faustvstqt::updateVST_buttonPressed(){
-    int vstParam = QObject::sender()->property("vstParam").toInt();
-    qDebug() << "VST: vstParam: " << vstParam;
-    char text[32];
-    effect->getParameterName(vstParam, text);
-    qDebug() << "VST: label: "          << text;
-    qDebug() << "VST: button pressed";
-    effect->setParameter(vstParam, 1.0f);
+void Editor_faustvstqt::updateVST_buttonPressed()
+{
+  int vstParam = QObject::sender()->property("vstParam").toInt();
+  qDebug() << "VST: vstParam: " << vstParam;
+  char text[32];
+  effect->getParameterName(vstParam, text);
+  qDebug() << "VST: label: "          << text;
+  qDebug() << "VST: button pressed";
+  effect->setParameter(vstParam, 1.0f);
 }
 
 /**
  * @brief Editor_faustvstqt::updateVST_buttonReleased
  * - slot for releasing a button object
  */
-void Editor_faustvstqt::updateVST_buttonReleased(){
-    int vstParam = QObject::sender()->property("vstParam").toInt();
-    qDebug() << "VST: vstParam: " << vstParam;
-    qDebug() << "VST: button released";
-    effect->setParameter(vstParam, 0.0f);
+void Editor_faustvstqt::updateVST_buttonReleased()
+{
+  int vstParam = QObject::sender()->property("vstParam").toInt();
+  qDebug() << "VST: vstParam: " << vstParam;
+  qDebug() << "VST: button released";
+  effect->setParameter(vstParam, 0.0f);
 }
 
 /**
  * @brief Editor_faustvstqt::updateVST_checkBox
  * - slot for check boxes
  */
-void Editor_faustvstqt::updateVST_checkBox(){
-    int vstParam = QObject::sender()->property("vstParam").toInt();
-    qDebug() << "VST: vstParam: " << vstParam;
+void Editor_faustvstqt::updateVST_checkBox()
+{
+  int vstParam = QObject::sender()->property("vstParam").toInt();
+  qDebug() << "VST: vstParam: " << vstParam;
 
-    // if CheckBox == checked
-    if(QObject::sender()->property("checked").toBool()){
-        qDebug("checkbox checked");
-        effect->setParameter(vstParam, 1.0f);
-    }else{
-        qDebug("checkbox unchecked");
-        effect->setParameter(vstParam, 0.0f);
-    }
+  // if CheckBox == checked
+  if(QObject::sender()->property("checked").toBool()) {
+    qDebug("checkbox checked");
+    effect->setParameter(vstParam, 1.0f);
+  } else {
+    qDebug("checkbox unchecked");
+    effect->setParameter(vstParam, 0.0f);
+  }
 }
 
 /**
@@ -2992,34 +3035,35 @@ void Editor_faustvstqt::updateVST_checkBox(){
  * - slot for all other active control elements (sliders, knobs, menus, radio
  *   buttons etc.)
  */
-void Editor_faustvstqt::updateVST(){
-    double value, minimum, maximum, step;
-    int vstParam;
+void Editor_faustvstqt::updateVST()
+{
+  double value, minimum, maximum, step;
+  int vstParam;
 
-    // for uiMenu we have the property "currentIndex" instead of the property
-    // "value"
-    if (QString(QObject::sender()->metaObject()->className())=="uiMenu")
-        value = QObject::sender()->property("currentIndex").toDouble();
-    else
-        value = QObject::sender()->property("value").toDouble();
-    vstParam  = QObject::sender()->property("vstParam").toInt();
-    minimum   = QObject::sender()->property("minimum").toDouble();
-    maximum   = QObject::sender()->property("maximum").toDouble();
-    step      = QObject::sender()->property("singleStep").toDouble();
+  // for uiMenu we have the property "currentIndex" instead of the property
+  // "value"
+  if (QString(QObject::sender()->metaObject()->className())=="uiMenu")
+    value = QObject::sender()->property("currentIndex").toDouble();
+  else
+    value = QObject::sender()->property("value").toDouble();
+  vstParam  = QObject::sender()->property("vstParam").toInt();
+  minimum   = QObject::sender()->property("minimum").toDouble();
+  maximum   = QObject::sender()->property("maximum").toDouble();
+  step      = QObject::sender()->property("singleStep").toDouble();
 
-    qDebug() << "VST: vstParam: "       << vstParam;
-    char text[32];
-    effect->getParameterName(vstParam, text);
-    qDebug() << "VST: label: "          << text;
-    qDebug() << "VST: min: "            << minimum;
-    qDebug() << "VST: max: "            << maximum;
-    qDebug() << "VST: step: "           << step;
-    qDebug() << "VST: new Qt value: "   << value;
-    qDebug() << "VST: old VST value: "  << effect->getParameter(vstParam);
+  qDebug() << "VST: vstParam: "       << vstParam;
+  char text[32];
+  effect->getParameterName(vstParam, text);
+  qDebug() << "VST: label: "          << text;
+  qDebug() << "VST: min: "            << minimum;
+  qDebug() << "VST: max: "            << maximum;
+  qDebug() << "VST: step: "           << step;
+  qDebug() << "VST: new Qt value: "   << value;
+  qDebug() << "VST: old VST value: "  << effect->getParameter(vstParam);
 
-    float newFloat = valueToVST(value, minimum, maximum);
-    effect->setParameter(vstParam, newFloat);
-    qDebug() << "VST: new VST value: " << effect->getParameter(vstParam);
+  float newFloat = valueToVST(value, minimum, maximum);
+  effect->setParameter(vstParam, newFloat);
+  qDebug() << "VST: new VST value: " << effect->getParameter(vstParam);
 }
 
 /**
@@ -3029,23 +3073,24 @@ void Editor_faustvstqt::updateVST(){
  *   control elements
  * @param object
  */
-void Editor_faustvstqt::updatePassiveControl(QObject* object){
-    int vstParam = object->property("vstParam").toInt();
-    float minimum  = effect->getMinimum(vstParam);
-    float maximum  = effect->getMaximum(vstParam);
-    float vstValue = effect->getParameter(vstParam);
+void Editor_faustvstqt::updatePassiveControl(QObject* object)
+{
+  int vstParam = object->property("vstParam").toInt();
+  float minimum  = effect->getMinimum(vstParam);
+  float maximum  = effect->getMaximum(vstParam);
+  float vstValue = effect->getParameter(vstParam);
 
-    // convert the VST value back to the corresponding Faust value
-    float fValue = vstValue*maximum - vstValue*minimum + minimum;
+  // convert the VST value back to the corresponding Faust value
+  float fValue = vstValue*maximum - vstValue*minimum + minimum;
 
-    AbstractDisplay* bargraph  = dynamic_cast<AbstractDisplay*>(object);
-    QDoubleSpinBox* numDisplay = dynamic_cast<QDoubleSpinBox*>(object);
+  AbstractDisplay* bargraph  = dynamic_cast<AbstractDisplay*>(object);
+  QDoubleSpinBox* numDisplay = dynamic_cast<QDoubleSpinBox*>(object);
 
-    if(bargraph)
-        bargraph->setValue(fValue);
-    else if(numDisplay)
-        numDisplay->setValue(fValue);
+  if(bargraph)
+    bargraph->setValue(fValue);
+  else if(numDisplay)
+    numDisplay->setValue(fValue);
 
-    //qDebug() << "vstValue: " << vstValue;
-    //qDebug() << "fValue: "   << fValue;
+  //qDebug() << "vstValue: " << vstValue;
+  //qDebug() << "fValue: "   << fValue;
 }
