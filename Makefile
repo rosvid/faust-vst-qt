@@ -13,6 +13,15 @@ libdir = $(prefix)/lib
 vstlibdir = $(libdir)/vst
 faustlibdir = $(libdir)/faust
 
+# Try to guess the Faust installation prefix.
+faustprefix = $(patsubst %/bin/faust,%,$(shell which faust 2>/dev/null))
+ifeq ($(strip $(faustprefix)),)
+# Fall back to /usr/local.
+faustprefix = /usr/local
+endif
+incdir = $(faustprefix)/include
+faustincdir = $(incdir)/faust
+
 # Check for some common locations of the SDK files. This falls back to
 # /usr/local/src/vstsdk if none of these are found. In that case, or if make
 # picks the wrong location, you can also set the SDK variable explicitly.
@@ -67,16 +76,16 @@ srcdirs = $(patsubst %.dsp,%,$(dspsource))
 
 all: faust2faustvstqt $(plugins)
 
-# This sets the proper SDK paths in the faust2faustvstqt script, detected at
-# build time.
+# This sets the proper SDK and Faust paths in the faust2faustvstqt script,
+# detected at build time.
 faust2faustvstqt: faust2faustvstqt.in
-	sed -e 's?@SDK@?$(SDK)?g;s?@SDKSRC@?$(SDKSRC)?g' < $< > $@
+	sed -e 's?@SDK@?$(SDK)?g;s?@SDKSRC@?$(SDKSRC)?g;s?@FAUSTINC@?$(faustincdir)?g;s?@FAUSTLIB@?$(faustlibdir)?g' < $< > $@
 	chmod a+x $@
 
 # Generic build rules.
 
 %$(DLL): %.dsp faust2faustvstqt
-	+./faust2faustvstqt $(OPTS) -I examples $<
+	+FAUSTLIB=$(CURDIR) ./faust2faustvstqt $(OPTS) -I examples $<
 
 # Clean.
 
