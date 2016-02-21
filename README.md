@@ -51,11 +51,12 @@ hopefully be fixed in the future.
 
 - The plugins won't work directly in Ardour at present (Ardour will hang if
   you try this). However, you can work around this by running them inside
-  falkTX's Carla plugin instead. (Make sure that you use Carla LV2 rather than
-  Carla VST in Ardour; we found that the latter causes crashes when loading
-  the Faust VST plugins inside Carla.)
+  falkTX's [Carla plugin](https://github.com/falkTX/Carla) instead. (Make sure
+  that you use Carla LV2 rather than Carla VST in Ardour; we found that the
+  latter causes crashes when loading the Faust VST plugins inside Carla.)
 
 - Plugin windows have the wrong size and come up without scroll bars when they
   are opened for the first time in Qtractor. You can work around this by just
   closing and reopening the GUIs, they will look all right the second and
-  subsequent times.
+  subsequent times. Or run them through Carla, it will get the display right
+  on first attempt. :)
