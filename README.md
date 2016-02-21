@@ -15,6 +15,8 @@ use this architecture, Faust, the VST SDK and Qt are needed, so you'll want to
 install these beforehand. Please also check the upstream faust-vst
 documentation for further information.
 
+## Installation
+
 A Makefile is included. Running `make all` or just `make` will create the
 `faust2faustvstqt` shell script and compile the sample plugins in the
 `examples` subfolder. Running `make install` installs the sample plugins in
@@ -28,3 +30,32 @@ you should be able to compile your own Faust dsps with the installed
 and run `make` again.
 
 Also have a look at the Makefile for various compilation options.
+
+## Known Bugs
+
+The plugin architecture works by embedding Qt GUIs in windows provided by the
+VST host, which may cause trouble with some host programs. Specifically, the
+following issues related to different hosts are known already and will
+hopefully be fixed in the future.
+
+- VSTi GUIs show the `freq`, `gain` and `gate` "voice" parameters of
+  instrument dsps, which are supposed to be invisible to the user as they are
+  set by incoming MIDI note data. This affects all hosts. In the current
+  implementation these controls are simply disabled (grayed out), but they
+  will be completely hidden in the future.
+
+- Some plugins cause audio dropouts with some VST hosts when their GUI is
+  opened. The reasons for this aren't clear yet, and we don't know whether the
+  plugin architecture or the host is to blame. For the time being, you can
+  work around this by opening the corresponding GUIs before starting playback.
+
+- The plugins won't work directly in Ardour at present (Ardour will hang if
+  you try this). However, you can work around this by running them inside
+  falkTX's Carla plugin instead. (Make sure that you use Carla LV2 rather than
+  Carla VST in Ardour; we found that the latter causes crashes when loading
+  the Faust VST plugins inside Carla.)
+
+- Plugin windows have the wrong size and come up without scroll bars when they
+  are opened for the first time in Qtractor. You can work around this by just
+  closing and reopening the GUIs, they will look all right the second and
+  subsequent times.
