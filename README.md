@@ -1,7 +1,7 @@
 # faust-vst-qt
 
-Copyright (c) 2014-2015 by Albert Gräf  
-Copyright (c) 2015 by Roman Svidler
+Copyright (c) 2014-2016 by Albert Gräf  
+Copyright (c) 2015-2016 by Roman Svidler
 
 This software is distributed under the Lesser GNU Public License (LGPL);
 please check the included COPYING and COPYING.LESSER files for details.
