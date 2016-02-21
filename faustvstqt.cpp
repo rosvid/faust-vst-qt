@@ -2395,6 +2395,13 @@ Editor_faustvstqt::~Editor_faustvstqt()
   qDebug() << "editorCounter: " << editorCounter;
   qDebug() << "topWindows: " << qApp->topLevelWindows().size();
 #endif
+#if 0 // disabled for now
+  /* This seems to be an awful kludge and more trouble than it's worth (if
+     anything at all). It also crashes Qt hosts such as Qtractor on exit. Why
+     is it again that we need to delete the global qApp (even if we didn't
+     create it), and why do we count open windows per Faust plugin class and
+     not globally? I didn't notice any adverse effects after completely
+     disabling this code, actually this seems to improve things. -ag */
   if(editorCounter==0) {
 #if FAUSTQT_DEBUG
     qDebug("delete qApp");
@@ -2403,6 +2410,7 @@ Editor_faustvstqt::~Editor_faustvstqt()
     qApp->exit();
     delete qApp;
   }
+#endif
 }
 
 /**
