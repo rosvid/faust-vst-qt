@@ -75,8 +75,8 @@ faust2faustvstqt: faust2faustvstqt.in
 
 # Generic build rules.
 
-%$(DLL): %.dsp
-	./faust2faustvstqt $(OPTS) -I examples $<
+%$(DLL): %.dsp faust2faustvstqt
+	+./faust2faustvstqt $(OPTS) -I examples $<
 
 # Clean.
 
