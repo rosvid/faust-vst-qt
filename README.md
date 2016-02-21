@@ -34,9 +34,11 @@ Also have a look at the Makefile for various compilation options.
 ## Known Bugs
 
 The plugin architecture works by embedding Qt GUIs in windows provided by the
-VST host, which may cause trouble with some host programs. Specifically, the
-following issues related to different hosts are known already and will
-hopefully be fixed in the future.
+VST host, which unfortunately seems to cause trouble with some host
+applications. Below is a list of known issues related to different hosts;
+we'll hopefully be able to fix these in the future. If you notice any other
+issues then please file a detailed bug report with all information (including
+gdb backtraces etc.) that you can get hold of.
 
 - VSTi GUIs show the `freq`, `gain` and `gate` "voice" parameters of
   instrument dsps, which are supposed to be invisible to the user as they are
