@@ -2349,6 +2349,8 @@ int VSTWrapper::getMaxVoices()
 #include <QX11Info>
 #include <X11/Xlib.h>
 
+#line 2353 "faustvstqt.cpp"
+
 std::list<GUI*> GUI::fGuiList;
 
 int argc = 1;
@@ -2413,6 +2415,66 @@ Editor_faustvstqt::~Editor_faustvstqt()
 #endif
 }
 
+// This is a little wrapper class around QTGUI which takes care of eliminating
+// the freq/gain/gate controls of instruments in the user interface when
+// running the dsp's buildUserInterface method. -ag
+
+class QTGUIWrapper : public UI
+{
+protected:
+  bool is_instr;
+  QTGUI *ui;
+public:
+  QTGUIWrapper(QTGUI *_ui, bool _is_instr = false) :
+    is_instr(_is_instr), ui(_ui) {}
+  virtual ~QTGUIWrapper() {}
+
+  // -- widget's layouts
+  virtual void openTabBox(const char* label)
+  { ui->openTabBox(label); }
+  virtual void openHorizontalBox(const char* label)
+  { ui->openHorizontalBox(label); }
+  virtual void openVerticalBox(const char* label)
+  { ui->openVerticalBox(label); }
+  virtual void closeBox()
+  { ui->closeBox(); }
+
+  // -- active widgets
+  virtual void addButton(const char* label, FAUSTFLOAT* zone)
+  { if (!(is_instr && is_voice_ctrl(label)))
+      ui->addButton(label, zone); }
+  virtual void addCheckButton(const char* label, FAUSTFLOAT* zone)
+  { if (!(is_instr && is_voice_ctrl(label)))
+      ui->addCheckButton(label, zone); }
+  virtual void addVerticalSlider(const char* label, FAUSTFLOAT* zone,
+				 FAUSTFLOAT init, FAUSTFLOAT min,
+				 FAUSTFLOAT max, FAUSTFLOAT step)
+  { if (!(is_instr && is_voice_ctrl(label)))
+      ui->addVerticalSlider(label, zone, init, min, max, step); }
+  virtual void addHorizontalSlider(const char* label, FAUSTFLOAT* zone,
+				   FAUSTFLOAT init, FAUSTFLOAT min,
+				   FAUSTFLOAT max, FAUSTFLOAT step) 	
+  { if (!(is_instr && is_voice_ctrl(label)))
+      ui->addHorizontalSlider(label, zone, init, min, max, step); }
+  virtual void addNumEntry(const char* label, FAUSTFLOAT* zone,
+			   FAUSTFLOAT init, FAUSTFLOAT min,
+			   FAUSTFLOAT max, FAUSTFLOAT step)
+  { if (!(is_instr && is_voice_ctrl(label)))
+      ui->addNumEntry(label, zone, init, min, max, step); }
+
+  // -- passive widgets	
+  virtual void addHorizontalBargraph(const char* label, FAUSTFLOAT* zone,
+				     FAUSTFLOAT min, FAUSTFLOAT max) 
+  { ui->addHorizontalBargraph(label, zone, min, max); }
+  virtual void addVerticalBargraph(const char* label, FAUSTFLOAT* zone,
+				   FAUSTFLOAT min, FAUSTFLOAT max)
+  { ui->addVerticalBargraph(label, zone, min, max); }
+
+  virtual void declare(FAUSTFLOAT* zone, const char* key, const char* val)
+  { ui->declare(zone, key, val); }
+
+};
+
 /**
  * @brief Editor_faustvstqt::open
  * - method to open the plug-in GUI
@@ -2455,7 +2517,10 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG
   qDebug() << "open interface: " << qtinterface;
 #endif
-  dsp->buildUserInterface(qtinterface);
+  // We build the QTGUI indirectly through QTGUIWrapper whose sole purpose is
+  // to eliminate the voice controls in case of an instrument plugin.
+  QTGUIWrapper qtwrapper(qtinterface, effect->getMaxVoices()>0);
+  dsp->buildUserInterface(&qtwrapper);
 
   // update the size of the QTGUI after creating the GUI elements
   qtinterface->adjustSize();
@@ -2489,132 +2554,13 @@ bool Editor_faustvstqt::open(void *ptr)
   // adjust the widget size
   widget->resize(rectangle.right, rectangle.bottom);
 
-  // create the PFaustUI und initialize it using buildUserInterface
-  PFaustUI* ui = new PFaustUI();
-  dsp->buildUserInterface(ui);
-
-#if FAUSTQT_DEBUG>1
-  // debugging output: number of elements of the PFaustUI and other
-  // information about the elements
-  qDebug() << "nports: " << ui->nports;
-  qDebug() << "nemels: " << ui->nelems;
-  for(int i = 0; i < ui->nelems; i++) {
-    //if(ui->elems[i].port >= 0){
-    qDebug() << "nelems: " << i;
-    qDebug() << "port: " << ui->elems[i].port;
-    qDebug() << "label: " << ui->elems[i].label;
-    qDebug() << "type: " << ui->elems[i].type;
-    qDebug("");
-    //}
-  }
-#endif
-
-#if 0
-  // debugging output: generated UI elements and their order
-  for(int i = 0; i < ui->nelems; i++) {
-    switch(ui->elems[i].type) {
-    case UI_BUTTON:
-      std::cout << i << "-UI_BUTTON: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_CHECK_BUTTON:
-      std::cout << i << "-UI_CHECK_BUTTON: " << ui->elems[i].label
-		<< std::endl;
-      break;
-    case UI_V_SLIDER:
-      std::cout << i << "-UI_V_SLIDER: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_H_SLIDER:
-      std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_NUM_ENTRY:
-      std::cout << i << "-UI_NUM_ENTRY: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_V_BARGRAPH:
-      std::cout << i << "-UI_V_BARGRAPH: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_H_BARGRAPH:
-      std::cout << i << "-UI_H_BARGRAPH: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_END_GROUP:
-      std::cout << i << "-UI_END_GROUP" << std::endl;
-      break;
-    case UI_V_GROUP:
-      std::cout << i << "-UI_V_GROUP: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_H_GROUP:
-      std::cout << i << "-UI_H_GROUP: " << ui->elems[i].label << std::endl;
-      break;
-    case UI_T_GROUP:
-      std::cout << i << "-UI_T_GROUP: " << ui->elems[i].label << std::endl;
-      break;
-    default:
-      std::cout << i << " ist kein gültiges Element." << std::endl;
-      break;
-    }
-
-    //if(ui->elems[i].type == UI_H_SLIDER)
-    //    std::cout << i << "-UI_H_SLIDER: " << ui->elems[i].label << std::endl;
-  }
-#endif
-
   // determine all children of qtinterface of type QObject*
   QList<QObject*> allObjects = qtinterface->findChildren<QObject*>();
 #if FAUSTQT_DEBUG>1
   qDebug() << "QObjects total count: " << allObjects.count();
 #endif
 
-  // following section: if this is an instrument plug-in with voice
-  // controls then set the corresponding control variables
-  int freq, gain, gate, freqPort, gainPort, gatePort;
-  bool freqBool, gainBool, gateBool;
-
-#if FAUSTQT_DEBUG>1
-  qDebug() << "maxvoices: " << effect->getMaxVoices();
-#endif
-
-  if(effect->getMaxVoices()>0) {
-    freqBool = false;
-    gainBool = false;
-    gateBool = false;
-
-#if FAUSTQT_DEBUG>1
-    qDebug("instrument plug-in");
-#endif
-    if(effect->getFreq()!=-1) {
-      freq = effect->getFreq();
-      freqPort = ui->elems[freq].port;
-      freqBool = true;
-#if FAUSTQT_DEBUG>1
-      qDebug() << "freq: " << freq;
-      qDebug() << "freq port: " << freqPort;
-#endif
-    }
-    if(effect->getGain()!=-1) {
-      gain = effect->getGain();
-      gainPort = ui->elems[gain].port;
-      gainBool = true;
-#if FAUSTQT_DEBUG>1
-      qDebug() << "gain: " << gain;
-      qDebug() << "gain port: " << gainPort;
-#endif
-    }
-    if(effect->getGate()!=-1) {
-      gate = effect->getGate();
-      gatePort = ui->elems[gate].port;
-      gateBool = true;
-#if FAUSTQT_DEBUG>1
-      qDebug() << "gate: " << gate;
-      qDebug() << "gate port: " << gatePort;
-#endif
-    }
-  }
-#if FAUSTQT_DEBUG>1
-  else
-    qDebug("effect plug-in");
-#endif
-
   int vstParamCount = 0;
-  int vstDiff = 0;
   bool vstParamSet;
 
   bool vBargraphChecked = true; // used in HorizontalBargraph search
@@ -2626,7 +2572,7 @@ bool Editor_faustvstqt::open(void *ptr)
     qDebug("");
     // debugging output: class name of found object
     qDebug() << "QObject: " << (*i)->metaObject()->className();
-    qDebug() << "VST parameter assigned: " << vstParamCount-vstDiff;
+    qDebug() << "VST parameter assigned: " << vstParamCount;
 #endif
 
     vstParamSet = false;
@@ -2637,11 +2583,11 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
       qDebug("found slider!");
 #endif
-      slider->setProperty("vstParam", vstParamCount-vstDiff);
+      slider->setProperty("vstParam", vstParamCount);
 
       connect(slider, SIGNAL(valueChanged(int)), this, SLOT(updateVST()),
               Qt::QueuedConnection);
-      updateQTGUI(slider, effect->getParameter(vstParamCount-vstDiff));
+      updateQTGUI(slider, effect->getParameter(vstParamCount));
 
       vstParamCount++;
       vstParamSet = true;
@@ -2653,11 +2599,11 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
       qDebug("found knob!");
 #endif
-      dial->setProperty("vstParam", vstParamCount-vstDiff);
+      dial->setProperty("vstParam", vstParamCount);
 
       connect(dial, SIGNAL(valueChanged(int)), this, SLOT(updateVST()),
               Qt::QueuedConnection);
-      updateQTGUI(dial, effect->getParameter(vstParamCount-vstDiff));
+      updateQTGUI(dial, effect->getParameter(vstParamCount));
 
       vstParamCount++;
       vstParamSet = true;
@@ -2669,7 +2615,7 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
       qDebug("found button!");
 #endif
-      button->setProperty("vstParam", vstParamCount-vstDiff);
+      button->setProperty("vstParam", vstParamCount);
 
       connect(button, SIGNAL(pressed()), this,
 	      SLOT(updateVST_buttonPressed()), Qt::QueuedConnection);
@@ -2677,7 +2623,7 @@ bool Editor_faustvstqt::open(void *ptr)
 	      SLOT(updateVST_buttonReleased()), Qt::QueuedConnection);
 
       // button is released when GUI opens
-      effect->setParameter(vstParamCount-vstDiff, 0.0f);
+      effect->setParameter(vstParamCount, 0.0f);
 
       vstParamCount++;
       vstParamSet = true;
@@ -2692,12 +2638,12 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
         qDebug("found list!");
 #endif
-        num->setProperty("vstParam", vstParamCount-vstDiff);
+        num->setProperty("vstParam", vstParamCount);
 
         connect(num, SIGNAL(valueChanged(double)), this, SLOT(updateVST()),
                 Qt::QueuedConnection);
 
-        updateQTGUI(num, effect->getParameter(vstParamCount-vstDiff));
+        updateQTGUI(num, effect->getParameter(vstParamCount));
 
         vstParamCount++;
         vstParamSet = true;
@@ -2706,18 +2652,18 @@ bool Editor_faustvstqt::open(void *ptr)
         // found NumDisplay of VerticalBargraphs
         // this is always called if we found a vBargraph in the previous
         // iteration
-      } else if(effect->isPassiveControl(vstParamCount-vstDiff-1)==1
+      } else if(effect->isPassiveControl(vstParamCount-1)==1
                 && !vBargraphChecked) {
 #if FAUSTQT_DEBUG>1
         qDebug("found numDisplay!");
 #endif
-        num->setProperty("vstParam", vstParamCount-vstDiff-1);
+        num->setProperty("vstParam", vstParamCount-1);
 
         passiveControls.append(num);
 
         // the corresponding diplay of the vBargraphs is now set
         vBargraphChecked = true;
-      } else if(effect->isPassiveControl(vstParamCount-vstDiff)==2
+      } else if(effect->isPassiveControl(vstParamCount)==2
                 && vBargraphChecked) {
         QAbstractSlider* sliderOrKnob =
 	  qobject_cast<QAbstractSlider*>(lastObject);
@@ -2727,7 +2673,7 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
           qDebug("found horizontal bargraph with numerical style!");
 #endif
-          num->setProperty("vstParam", vstParamCount-vstDiff);
+          num->setProperty("vstParam", vstParamCount);
 
           passiveControls.append(num);
 
@@ -2743,14 +2689,14 @@ bool Editor_faustvstqt::open(void *ptr)
 #if FAUSTQT_DEBUG>1
       qDebug("found checkbox!");
 #endif
-      checkBox->setProperty("vstParam", vstParamCount-vstDiff);
+      checkBox->setProperty("vstParam", vstParamCount);
 
       connect(checkBox, SIGNAL(stateChanged(int)), this,
 	      SLOT(updateVST_checkBox()), Qt::QueuedConnection);
 
       // if the VST parameter of the checkbox is less than 0.5 then the
       // checkbox is unchecked
-      if(effect->getParameter(vstParamCount-vstDiff) < 0.5f)
+      if(effect->getParameter(vstParamCount) < 0.5f)
         checkBox->setChecked(false);
       else
         checkBox->setChecked(true);
@@ -2762,7 +2708,7 @@ bool Editor_faustvstqt::open(void *ptr)
     // Bargraph
     AbstractDisplay* bargraph = dynamic_cast<AbstractDisplay*>(*i);
     if (bargraph) {
-      if(effect->isPassiveControl(vstParamCount-vstDiff)==1) {
+      if(effect->isPassiveControl(vstParamCount)==1) {
 #if FAUSTQT_DEBUG>1
         qDebug("found vertical bargraph!");
 #endif
@@ -2773,7 +2719,7 @@ bool Editor_faustvstqt::open(void *ptr)
         qDebug("found horizontal bargraph!");
 #endif
 
-      bargraph->setProperty("vstParam", vstParamCount-vstDiff);
+      bargraph->setProperty("vstParam", vstParamCount);
       //led->setProperty("elemType", "led");
 
       passiveControls.append(bargraph);
@@ -2797,22 +2743,22 @@ bool Editor_faustvstqt::open(void *ptr)
       // iterate over all radio buttons in this group
       for (QList<QRadioButton*>::iterator r = radiobuttons.begin();
            r != radiobuttons.end(); ++r) {
-        float minimum = effect->getMinimum(vstParamCount-vstDiff);
-        float maximum = effect->getMaximum(vstParamCount-vstDiff);
+        float minimum = effect->getMinimum(vstParamCount);
+        float maximum = effect->getMaximum(vstParamCount);
         // set all properties needed for updateVST()
         (*r)->setProperty("value", radioCount);
-        (*r)->setProperty("vstParam", vstParamCount-vstDiff);
+        (*r)->setProperty("vstParam", vstParamCount);
         (*r)->setProperty("minimum", minimum);
         (*r)->setProperty("maximum", maximum);
         (*r)->setProperty("singleStep",
-			  effect->getStep(vstParamCount-vstDiff));
+			  effect->getStep(vstParamCount));
         connect((*r), SIGNAL(clicked(bool)), this, SLOT(updateVST()),
                 Qt::QueuedConnection);
 
         // set the proper radio button as "clicked" when the GUI opens
         if(!valueIsSet) {
           if(valueToVST(radioCount,minimum,maximum) >=
-	     effect->getParameter(vstParamCount-vstDiff)) {
+	     effect->getParameter(vstParamCount)) {
             (*r)->click();
             valueIsSet = true;
           }
@@ -2830,71 +2776,28 @@ bool Editor_faustvstqt::open(void *ptr)
       qDebug("found menu!");
 #endif
 
-      float minimum = effect->getMinimum(vstParamCount-vstDiff);
-      float maximum = effect->getMaximum(vstParamCount-vstDiff);
+      float minimum = effect->getMinimum(vstParamCount);
+      float maximum = effect->getMaximum(vstParamCount);
 
-      menu->setProperty("vstParam", vstParamCount-vstDiff);
+      menu->setProperty("vstParam", vstParamCount);
       menu->setProperty("minimum", minimum);
       menu->setProperty("maximum", maximum);
-      menu->setProperty("singleStep", effect->getStep(vstParamCount-vstDiff));
+      menu->setProperty("singleStep", effect->getStep(vstParamCount));
 
       connect(menu, SIGNAL(activated(int)), this, SLOT(updateVST()),
               Qt::QueuedConnection);
 
-      updateQTGUI(menu, effect->getParameter(vstParamCount-vstDiff));
+      updateQTGUI(menu, effect->getParameter(vstParamCount));
       menu->updateZone(0);    // updates the currentIndex
 
       vstParamCount++;
       vstParamSet = true;
     }
-
-    // check for instrument plug-in in order to deactivate the voice
-    // (freq, gain, gate) control elements
-    if(effect->getMaxVoices()>0 && vstParamSet) {
-      if(freqBool && vstParamCount-1==freqPort) {
-        QWidget* guiWid = qobject_cast<QWidget*>(*i);
-        if(guiWid) {
-          freqBool = false;
-          vstDiff++;
-#if FAUSTQT_DEBUG>1
-          qDebug() << "found freq parameter, deactivating widget!";
-#endif
-          //guiWid->close();
-          //guiWid->disconnect();
-          guiWid->setDisabled(true);
-        }
-      } else if(gainBool && vstParamCount-1==gainPort) {
-        QWidget* guiWid = qobject_cast<QWidget*>(*i);
-        if(guiWid) {
-          gainBool = false;
-          vstDiff++;
-#if FAUSTQT_DEBUG>1
-          qDebug() << "found gain parameter, deactivating widget!";
-#endif
-          //guiWid->close();
-          //guiWid->disconnect();
-          guiWid->setDisabled(true);
-        }
-      } else if(gateBool && vstParamCount-1==gatePort) {
-        QWidget* guiWid = qobject_cast<QWidget*>(*i);
-        if(guiWid) {
-          gateBool = false;
-          vstDiff++;
-#if FAUSTQT_DEBUG>1
-          qDebug() << "found gate parameter, deactivating widget!";
-#endif
-          //guiWid->close();
-          //guiWid->disconnect();
-          guiWid->setDisabled(true);
-        }
-      }
-    }
-    // save the QObject of this iteration
-    lastObject = (*i);
   }
 
+
 #if FAUSTQT_DEBUG>1
-  qDebug() << "VST Parameter assigned: " << vstParamCount-vstDiff;
+  qDebug() << "VST Parameter assigned: " << vstParamCount;
 #endif
 
   qtinterface->run();
