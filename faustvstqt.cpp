@@ -821,15 +821,15 @@ struct PFaustPlugin {
     if (vd) {
       vd->n_free = maxvoices;
       for (int i = 0; i < maxvoices; i++) {
-    vd->free_voices.push_back(i);
-    vd->lastgate[i] = 0.0f;
+	vd->free_voices.push_back(i);
+	vd->lastgate[i] = 0.0f;
       }
       for (int i = 0; i < 16; i++) {
-    vd->bend[i] = 0.0f;
-    vd->range[i] = 2.0f;
-    vd->coarse[i] = vd->fine[i] = vd->tune[i] = 0.0f;
-    for (int j = 0; j < 12; j++)
-      vd->tuning[i][j] = 0.0f;
+	vd->bend[i] = 0.0f;
+	vd->range[i] = 2.0f;
+	vd->coarse[i] = vd->fine[i] = vd->tune[i] = 0.0f;
+	for (int j = 0; j < 12; j++)
+	  vd->tuning[i][j] = 0.0f;
       }
       vd->n_used = 0;
       memset(vd->notes, 0xff, sizeof(vd->notes));
@@ -873,83 +873,83 @@ struct PFaustPlugin {
       const char *unit = NULL;
       switch (ui[0]->elems[i].type) {
       case UI_T_GROUP: case UI_H_GROUP: case UI_V_GROUP: case UI_END_GROUP:
-    // control groups (ignored right now)
-    break;
+	// control groups (ignored right now)
+	break;
       case UI_H_BARGRAPH: case UI_V_BARGRAPH:
-    // passive controls (output ports)
-    ctrls[j++] = i;
-    outctrls[q++] = i;
-    {
-      std::map< int, list<strpair> >::iterator it =
-        ui[0]->metadata.find(i);
-      if (it != ui[0]->metadata.end()) {
-        for (std::list<strpair>::iterator jt = it->second.begin();
-         jt != it->second.end(); jt++) {
-          const char *key = jt->first, *val = jt->second;
+	// passive controls (output ports)
+	ctrls[j++] = i;
+	outctrls[q++] = i;
+	{
+	  std::map< int, list<strpair> >::iterator it =
+	    ui[0]->metadata.find(i);
+	  if (it != ui[0]->metadata.end()) {
+	    for (std::list<strpair>::iterator jt = it->second.begin();
+		 jt != it->second.end(); jt++) {
+	      const char *key = jt->first, *val = jt->second;
 #if DEBUG_META
-          fprintf(stderr, "ctrl '%s' meta: '%s' -> '%s'\n",
-              ui[0]->elems[i].label, key, val);
+	      fprintf(stderr, "ctrl '%s' meta: '%s' -> '%s'\n",
+		      ui[0]->elems[i].label, key, val);
 #endif
-          if (strcmp(key, "unit") == 0)
-        unit = val;
-        }
-      }
-      int p = ui[0]->elems[i].port;
-      units[p] = unit;
-    }
-    break;
+	      if (strcmp(key, "unit") == 0)
+		unit = val;
+	    }
+	  }
+	  int p = ui[0]->elems[i].port;
+	  units[p] = unit;
+	}
+	break;
       default:
-    // active controls (input ports)
-    if (maxvoices == 0)
-      goto noinstr;
-    else if (freq == -1 &&
-         !strcmp(ui[0]->elems[i].label, "freq"))
-      freq = i;
-    else if (gain == -1 &&
-         !strcmp(ui[0]->elems[i].label, "gain"))
-      gain = i;
-    else if (gate == -1 &&
-         !strcmp(ui[0]->elems[i].label, "gate"))
-      gate = i;
-    else {
-    noinstr:
-      std::map< int, list<strpair> >::iterator it =
-        ui[0]->metadata.find(i);
-      if (it != ui[0]->metadata.end()) {
-        // Scan for controller mappings and other control meta data.
-        for (std::list<strpair>::iterator jt = it->second.begin();
-         jt != it->second.end(); jt++) {
-          const char *key = jt->first, *val = jt->second;
+	// active controls (input ports)
+	if (maxvoices == 0)
+	  goto noinstr;
+	else if (freq == -1 &&
+		 !strcmp(ui[0]->elems[i].label, "freq"))
+	  freq = i;
+	else if (gain == -1 &&
+		 !strcmp(ui[0]->elems[i].label, "gain"))
+	  gain = i;
+	else if (gate == -1 &&
+		 !strcmp(ui[0]->elems[i].label, "gate"))
+	  gate = i;
+	else {
+	noinstr:
+	  std::map< int, list<strpair> >::iterator it =
+	    ui[0]->metadata.find(i);
+	  if (it != ui[0]->metadata.end()) {
+	    // Scan for controller mappings and other control meta data.
+	    for (std::list<strpair>::iterator jt = it->second.begin();
+		 jt != it->second.end(); jt++) {
+	      const char *key = jt->first, *val = jt->second;
 #if DEBUG_META
-          fprintf(stderr, "ctrl '%s' meta: '%s' -> '%s'\n",
-              ui[0]->elems[i].label, key, val);
+	      fprintf(stderr, "ctrl '%s' meta: '%s' -> '%s'\n",
+		      ui[0]->elems[i].label, key, val);
 #endif
-          if (strcmp(key, "unit") == 0) {
-        unit = val;
+	      if (strcmp(key, "unit") == 0) {
+		unit = val;
 #if FAUST_MIDICC
-          } else if (strcmp(key, "midi") == 0) {
-        unsigned num;
-        if (sscanf(val, "ctrl %u", &num) < 1) continue;
+	      } else if (strcmp(key, "midi") == 0) {
+		unsigned num;
+		if (sscanf(val, "ctrl %u", &num) < 1) continue;
 #if 0 // enable this to get feedback about controller assignments
-        const char *dsp_name = pluginName();
-        fprintf(stderr, "%s: cc %d -> %s\n", dsp_name, num,
-            ui[0]->elems[i].label);
+		const char *dsp_name = pluginName();
+		fprintf(stderr, "%s: cc %d -> %s\n", dsp_name, num,
+			ui[0]->elems[i].label);
 #endif
-        ctrlmap.insert(std::pair<uint8_t,int>(num, p));
+		ctrlmap.insert(std::pair<uint8_t,int>(num, p));
 #endif
-          }
-        }
-      }
-      ctrls[j++] = i;
-      inctrls[p++] = i;
-      int p = ui[0]->elems[i].port;
-      float val = ui[0]->elems[i].init;
-      portvals[p] = ports[p] = val;
-      units[p] = unit;
-      for (int ch = 0; ch < 16; ch++)
-        midivals[ch][p] = val;
-    }
-    break;
+	      }
+	    }
+	  }
+	  ctrls[j++] = i;
+	  inctrls[p++] = i;
+	  int p = ui[0]->elems[i].port;
+	  float val = ui[0]->elems[i].init;
+	  portvals[p] = ports[p] = val;
+	  units[p] = unit;
+	  for (int ch = 0; ch < 16; ch++)
+	    midivals[ch][p] = val;
+	}
+	break;
       }
     }
     // Realloc the inctrls and outctrls vectors to their appropriate sizes.
@@ -967,16 +967,16 @@ struct PFaustPlugin {
       // later when we know what the actual blocksize is.
       n_samples = 512;
       for (int i = 0; i < m; i++) {
-    outbuf[i] = (float*)malloc(n_samples*sizeof(float));
-    assert(outbuf[i]);
+	outbuf[i] = (float*)malloc(n_samples*sizeof(float));
+	assert(outbuf[i]);
       }
       // Initialize a 1-sample dummy input buffer used for retriggering notes.
       inbuf = (float**)calloc(n, sizeof(float*));
       assert(n == 0 || inbuf);
       for (int i = 0; i < m; i++) {
-    inbuf[i] = (float*)malloc(sizeof(float));
-    assert(inbuf[i]);
-    *inbuf[i] = 0.0f;
+	inbuf[i] = (float*)malloc(sizeof(float));
+	assert(inbuf[i]);
+	*inbuf[i] = 0.0f;
       }
     }
   }
@@ -1106,13 +1106,13 @@ struct PFaustPlugin {
     int i = vd->notes[ch][note];
     if (i >= 0) {
       if (vd->lastgate[i] == 0.0f && gate >= 0) {
-    // zero-length note, queued for later
-    vd->queued.insert(i);
-    vd->notes[ch][note] = -1;
+	// zero-length note, queued for later
+	vd->queued.insert(i);
+	vd->notes[ch][note] = -1;
 #if DEBUG_VOICE_ALLOC
-    print_voices("dealloc (queued)");
+	print_voices("dealloc (queued)");
 #endif
-    return i;
+	return i;
       }
       assert(vd->n_free < nvoices);
       vd->free_voices.push_back(i);
@@ -1121,13 +1121,13 @@ struct PFaustPlugin {
       vd->notes[ch][note] = -1;
       // erase this voice from the used list
       for (boost::circular_buffer<int>::iterator it =
-         vd->used_voices.begin();
-       it != vd->used_voices.end(); it++) {
-    if (*it == i) {
-      vd->used_voices.erase(it);
-      vd->n_used--;
-      break;
-    }
+	     vd->used_voices.begin();
+	   it != vd->used_voices.end(); it++) {
+	if (*it == i) {
+	  vd->used_voices.erase(it);
+	  vd->n_used--;
+	  break;
+	}
       }
 #if DEBUG_VOICE_ALLOC
       print_voices("dealloc");
@@ -1185,11 +1185,11 @@ struct PFaustPlugin {
     // changes
     for (boost::circular_buffer<int>::iterator it =
        vd->used_voices.begin();
-     it != vd->used_voices.end(); it++) {
+	 it != vd->used_voices.end(); it++) {
       int i = *it;
       if (vd->note_info[i].ch == chan && freq >= 0) {
-    int note = vd->note_info[i].note;
-    *ui[i]->elems[freq].zone = midicps(note, chan);
+	int note = vd->note_info[i].note;
+	*ui[i]->elems[freq].zone = midicps(note, chan);
       }
     }
   }
@@ -1240,24 +1240,24 @@ struct PFaustPlugin {
     if (vd->queued.empty()) return;
     for (int i = 0; i < nvoices; i++)
       if (vd->queued.find(i) != vd->queued.end()) {
-    assert(vd->n_free < nvoices);
-    vd->free_voices.push_back(i);
-    vd->n_free++;
-    voice_off(i);
-    vd->notes[vd->note_info[i].ch][vd->note_info[i].note] = -1;
-    vd->queued.erase(i);
-    // erase this voice from the used list
-    for (boost::circular_buffer<int>::iterator it =
-           vd->used_voices.begin();
-         it != vd->used_voices.end(); it++) {
-      if (*it == i) {
-        vd->used_voices.erase(it);
-        vd->n_used--;
-        break;
-      }
-    }
+	assert(vd->n_free < nvoices);
+	vd->free_voices.push_back(i);
+	vd->n_free++;
+	voice_off(i);
+	vd->notes[vd->note_info[i].ch][vd->note_info[i].note] = -1;
+	vd->queued.erase(i);
+	// erase this voice from the used list
+	for (boost::circular_buffer<int>::iterator it =
+	       vd->used_voices.begin();
+	     it != vd->used_voices.end(); it++) {
+	  if (*it == i) {
+	    vd->used_voices.erase(it);
+	    vd->n_used--;
+	    break;
+	  }
+	}
 #if DEBUG_VOICE_ALLOC
-    print_voices("dealloc (unqueued)");
+	print_voices("dealloc (unqueued)");
 #endif
       }
   }
@@ -1283,8 +1283,8 @@ struct PFaustPlugin {
     for (int i = 0, j = 0; i < ui[0]->nelems; i++) {
       int p = ui[0]->elems[i].port;
       if (p >= 0) {
-    float val = ui[0]->elems[i].init;
-    portvals[p] = val;
+	float val = ui[0]->elems[i].init;
+	portvals[p] = val;
       }
     }
     active = true;
@@ -1310,29 +1310,29 @@ struct PFaustPlugin {
       // invoked, since the plugin is deactivitated at this point. But let's
       // do something reasonable here anyway.
       if (n == m) {
-    // copy inputs to outputs
-    for (int i = 0; i < m; i++)
-      for (unsigned j = 0; j < blocksz; j++)
-        outputs[i][j] = inputs[i][j];
+	// copy inputs to outputs
+	for (int i = 0; i < m; i++)
+	  for (unsigned j = 0; j < blocksz; j++)
+	    outputs[i][j] = inputs[i][j];
       } else {
-    // silence
-    for (int i = 0; i < m; i++)
-      for (unsigned j = 0; j < blocksz; j++)
-        outputs[i][j] = 0.0f;
+	// silence
+	for (int i = 0; i < m; i++)
+	  for (unsigned j = 0; j < blocksz; j++)
+	    outputs[i][j] = 0.0f;
       }
       return;
     }
     // Handle changes in the polyphony control.
     if (nvoices != poly && poly > 0 && poly <= maxvoices) {
       for (int i = 0; i < nvoices; i++)
-    voice_off(i);
+	voice_off(i);
       nvoices = poly;
       // Reset the voice allocation.
       memset(vd->notes, 0xff, sizeof(vd->notes));
       vd->free_voices.clear();
       vd->n_free = nvoices;
       for (int i = 0; i < nvoices; i++)
-    vd->free_voices.push_back(i);
+	vd->free_voices.push_back(i);
       vd->used_voices.clear();
       vd->n_used = 0;
     } else
@@ -1347,24 +1347,24 @@ struct PFaustPlugin {
       int j = inctrls[i], k = ui[0]->elems[j].port;
       float &oldval = portvals[k], newval = ports[k];
       if (newval != oldval) {
-    if (is_instr) {
-      // instrument: update running voices
-      for (boost::circular_buffer<int>::iterator it =
-         vd->used_voices.begin();
-           it != vd->used_voices.end(); it++) {
-        int i = *it;
-        *ui[i]->elems[j].zone = newval;
-      }
-    } else {
-      // simple effect: here we only have a single dsp instance
-      *ui[0]->elems[j].zone = newval;
-    }
-    // also update the MIDI controller data for all channels (manual
-    // control input is always omni)
-    for (int ch = 0; ch < 16; ch++)
-      midivals[ch][k] = newval;
-    // record the new value
-    oldval = newval;
+	if (is_instr) {
+	  // instrument: update running voices
+	  for (boost::circular_buffer<int>::iterator it =
+		 vd->used_voices.begin();
+	       it != vd->used_voices.end(); it++) {
+	    int i = *it;
+	    *ui[i]->elems[j].zone = newval;
+	  }
+	} else {
+	  // simple effect: here we only have a single dsp instance
+	  *ui[0]->elems[j].zone = newval;
+	}
+	// also update the MIDI controller data for all channels (manual
+	// control input is always omni)
+	for (int ch = 0; ch < 16; ch++)
+	  midivals[ch][k] = newval;
+	// record the new value
+	oldval = newval;
       }
     }
     // Initialize the output buffers.
@@ -1375,25 +1375,25 @@ struct PFaustPlugin {
       // else that we can do. Let's just hope that doing this once suffices,
       // then hopefully noone will notice.
       if (outbuf) {
-    for (int i = 0; i < m; i++) {
-      outbuf[i] = (float*)realloc(outbuf[i],
-                      blocksz*sizeof(float));
-      assert(outbuf[i]);
-    }
+	for (int i = 0; i < m; i++) {
+	  outbuf[i] = (float*)realloc(outbuf[i],
+				      blocksz*sizeof(float));
+	  assert(outbuf[i]);
+	}
       }
       n_samples = blocksz;
     }
     if (outbuf) {
-      // Pphonic instrument: Mix the voices down to one signal.
+      // Polyphonic instrument: Mix the voices down to one signal.
       for (int i = 0; i < m; i++)
-    for (unsigned j = 0; j < n_samples; j++)
-      outputs[i][j] = 0.0f;
+	for (unsigned j = 0; j < n_samples; j++)
+	  outputs[i][j] = 0.0f;
       for (int l = 0; l < nvoices; l++) {
-    // Let Faust do all the hard work.
-    dsp[l]->compute(n_samples, inputs, outbuf);
-    for (int i = 0; i < m; i++)
-      for (unsigned j = 0; j < n_samples; j++)
-        outputs[i][j] += outbuf[i][j];
+	// Let Faust do all the hard work.
+	dsp[l]->compute(n_samples, inputs, outbuf);
+	for (int i = 0; i < m; i++)
+	  for (unsigned j = 0; j < n_samples; j++)
+	    outputs[i][j] += outbuf[i][j];
       }
     } else {
       // Simple effect: We can write directly to the output buffer.
@@ -1410,17 +1410,17 @@ struct PFaustPlugin {
       float *z = ui[0]->elems[j].zone;
       ports[k] = *z;
       for (int l = 1; l < nvoices; l++) {
-    float *z = ui[l]->elems[j].zone;
-    if (ports[k] < *z)
-      ports[k] = *z;
+	float *z = ui[l]->elems[j].zone;
+	if (ports[k] < *z)
+	  ports[k] = *z;
       }
     }
     // Keep track of the last gates set for each voice, so that voices can be
     // forcibly retriggered if needed.
     if (gate >= 0)
       for (int i = 0; i < nvoices; i++)
-    vd->lastgate[i] =
-      *ui[i]->elems[gate].zone;
+	vd->lastgate[i] =
+	  *ui[i]->elems[gate].zone;
   }
 
   // This processes just a single MIDI message, so to process an entire series
@@ -1443,7 +1443,7 @@ struct PFaustPlugin {
       // note on
 #if DEBUG_NOTES
       fprintf(stderr, "note-on  chan %d, note %d, vel %d\n", chan+1,
-          data[1], data[2]);
+	      data[1], data[2]);
 #endif
       if (data[2] == 0) goto note_off;
       alloc_voice(chan, data[1], data[2]);
@@ -1454,7 +1454,7 @@ struct PFaustPlugin {
       // note off
 #if DEBUG_NOTES
       fprintf(stderr, "note-off chan %d, note %d, vel %d\n", chan+1,
-          data[1], data[2]);
+	      data[1], data[2]);
 #endif
       note_off:
       dealloc_voice(chan, data[1], data[2]);
@@ -1467,10 +1467,10 @@ struct PFaustPlugin {
       // -2..+2 semitones by default), center point is 0x2000 = 8192
       int val = data[1] | (data[2]<<7);
       vd->bend[chan] =
-    (val-0x2000)/8192.0f*vd->range[chan];
+	(val-0x2000)/8192.0f*vd->range[chan];
 #if DEBUG_MIDICC
       fprintf(stderr, "pitch-bend (chan %d): %g cent\n", chan+1,
-          vd->bend[chan]*100.0);
+	      vd->bend[chan]*100.0);
 #endif
       update_voices(chan);
       break;
@@ -1479,132 +1479,132 @@ struct PFaustPlugin {
       // controller change
       switch (data[1]) {
       case 120: case 123:
-    if (!is_instr) break;
-    // all-sound-off and all-notes-off controllers (these are treated
-    // the same in the current implementation)
-    all_notes_off(chan);
+	if (!is_instr) break;
+	// all-sound-off and all-notes-off controllers (these are treated
+	// the same in the current implementation)
+	all_notes_off(chan);
 #if DEBUG_MIDICC
-    fprintf(stderr, "all-notes-off (chan %d)\n", chan+1);
+	fprintf(stderr, "all-notes-off (chan %d)\n", chan+1);
 #endif
     break;
       case 121:
-    // all-controllers-off (in the current implementation, this just
-    // resets the RPN-related controllers)
-    data_msb[chan] = data_lsb[chan] = 0;
-    rpn_msb[chan] = rpn_lsb[chan] = 0x7f;
+	// all-controllers-off (in the current implementation, this just
+	// resets the RPN-related controllers)
+	data_msb[chan] = data_lsb[chan] = 0;
+	rpn_msb[chan] = rpn_lsb[chan] = 0x7f;
 #if DEBUG_MIDICC
-    fprintf(stderr, "all-controllers-off (chan %d)\n", chan+1);
+	fprintf(stderr, "all-controllers-off (chan %d)\n", chan+1);
 #endif
     break;
       case 101: case 100:
-    // RPN MSB/LSB
-    if (data[1] == 101)
-      rpn_msb[chan] = data[2];
-    else
-      rpn_lsb[chan] = data[2];
-    break;
+	// RPN MSB/LSB
+	if (data[1] == 101)
+	  rpn_msb[chan] = data[2];
+	else
+	  rpn_lsb[chan] = data[2];
+	break;
       case 6: case 38:
-    // data entry coarse/fine
-    if (data[1] == 6)
-      data_msb[chan] = data[2];
-    else
-      data_lsb[chan] = data[2];
-    goto rpn;
+	// data entry coarse/fine
+	if (data[1] == 6)
+	  data_msb[chan] = data[2];
+	else
+	  data_lsb[chan] = data[2];
+	goto rpn;
       case 96: case 97:
-    // data increment/decrement
-    /* NOTE: The specification of these controllers is a complete
-       mess. Originally, the MIDI specification didn't have anything
-       to say about their exact behaviour at all. Nowadays, the
-       behaviour depends on which RPN or NRPN is being modified, which
-       is also rather confusing. Fortunately, as we only handle RPNs
-       0..2 here anyway, it's sufficient to assume the MSB for RPN #2
-       (channel coarse tuning) and the LSB otherwise. */
-    if (rpn_msb[chan] == 0 && rpn_lsb[chan] == 2) {
-      // modify the MSB
-      if (data[1] == 96 && data_msb[chan] < 0x7f)
-        data_msb[chan]++;
-      else if (data[1] == 97 && data_msb[chan] > 0)
-        data_msb[chan]--;
-    } else {
-      // modify the LSB
-      if (data[1] == 96 && data_lsb[chan] < 0x7f)
-        data_lsb[chan]++;
-      else if (data[1] == 97 && data_lsb[chan] > 0)
-        data_lsb[chan]--;
-    }
+	// data increment/decrement
+	/* NOTE: The specification of these controllers is a complete
+	   mess. Originally, the MIDI specification didn't have anything
+	   to say about their exact behaviour at all. Nowadays, the
+	   behaviour depends on which RPN or NRPN is being modified, which
+	   is also rather confusing. Fortunately, as we only handle RPNs
+	   0..2 here anyway, it's sufficient to assume the MSB for RPN #2
+	   (channel coarse tuning) and the LSB otherwise. */
+	if (rpn_msb[chan] == 0 && rpn_lsb[chan] == 2) {
+	  // modify the MSB
+	  if (data[1] == 96 && data_msb[chan] < 0x7f)
+	    data_msb[chan]++;
+	  else if (data[1] == 97 && data_msb[chan] > 0)
+	    data_msb[chan]--;
+	} else {
+	  // modify the LSB
+	  if (data[1] == 96 && data_lsb[chan] < 0x7f)
+	    data_lsb[chan]++;
+	  else if (data[1] == 97 && data_lsb[chan] > 0)
+	    data_lsb[chan]--;
+	}
       rpn:
-    if (!is_instr) break;
-    if (rpn_msb[chan] == 0) {
-      switch (rpn_lsb[chan]) {
-      case 0:
-        // pitch bend range, coarse value is in semitones, fine value
-        // in cents
-        vd->range[chan] = data_msb[chan]+
-          data_lsb[chan]/100.0;
+	if (!is_instr) break;
+	if (rpn_msb[chan] == 0) {
+	  switch (rpn_lsb[chan]) {
+	  case 0:
+	    // pitch bend range, coarse value is in semitones, fine value
+	    // in cents
+	    vd->range[chan] = data_msb[chan]+
+	      data_lsb[chan]/100.0;
 #if DEBUG_RPN
-        fprintf(stderr, "pitch-bend-range (chan %d): %g cent\n", chan+1,
-            vd->range[chan]*100.0);
+	    fprintf(stderr, "pitch-bend-range (chan %d): %g cent\n", chan+1,
+		    vd->range[chan]*100.0);
 #endif
-        break;
-      case 1:
-        {
-          // channel fine tuning (14 bit value, range -100..+100 cents)
-          int value = (data_msb[chan]<<7) |
-        data_lsb[chan];
-          vd->fine[chan] = (value-8192)/8192.0f;
-        }
-        goto master_tune;
-      case 2:
-        // channel coarse tuning (only msb is used, range -64..+63
-        // semitones)
-        vd->coarse[chan] = data_msb[chan]-64;
-      master_tune:
-        vd->tune[chan] = vd->coarse[chan]+
-          vd->fine[chan];
+	    break;
+	  case 1:
+	    {
+	      // channel fine tuning (14 bit value, range -100..+100 cents)
+	      int value = (data_msb[chan]<<7) |
+		data_lsb[chan];
+	      vd->fine[chan] = (value-8192)/8192.0f;
+	    }
+	    goto master_tune;
+	  case 2:
+	    // channel coarse tuning (only msb is used, range -64..+63
+	    // semitones)
+	    vd->coarse[chan] = data_msb[chan]-64;
+	  master_tune:
+	    vd->tune[chan] = vd->coarse[chan]+
+	      vd->fine[chan];
 #if DEBUG_RPN
-        fprintf(stderr, "master-tuning (chan %d): %g cent\n", chan+1,
-            vd->tune[chan]*100.0);
+	    fprintf(stderr, "master-tuning (chan %d): %g cent\n", chan+1,
+		    vd->tune[chan]*100.0);
 #endif
-        update_voices(chan);
-        break;
-      default:
-        break;
-      }
-    }
-    break;
+	    update_voices(chan);
+	    break;
+	  default:
+	    break;
+	  }
+	}
+	break;
       default: {
 #if FAUST_MIDICC
-    // interpret all other controller changes according to the MIDI
-    // controller map defined in the Faust plugin itself
-    std::map<uint8_t,int>::iterator it = ctrlmap.find(data[1]);
-    if (it != ctrlmap.end()) {
-      // defined MIDI controller
-      int j = inctrls[it->second],
-        k = ui[0]->elems[j].port;
-      float val = ctrlval(ui[0]->elems[j], data[2]);
-      midivals[chan][k] = val;
-      if (is_instr) {
-        // instrument: update running voices on this channel
-        for (boost::circular_buffer<int>::iterator it =
-           vd->used_voices.begin();
-         it != vd->used_voices.end(); it++) {
-          int i = *it;
-          if (vd->note_info[i].ch == chan)
-        *ui[i]->elems[j].zone = val;
-        }
-      } else {
-        // simple effect: here we only have a single dsp instance and
-        // we're operating in omni mode, so we just update the control no
-        // matter what the midi channel is
-        *ui[0]->elems[j].zone = val;
-      }
+	// interpret all other controller changes according to the MIDI
+	// controller map defined in the Faust plugin itself
+	std::map<uint8_t,int>::iterator it = ctrlmap.find(data[1]);
+	if (it != ctrlmap.end()) {
+	  // defined MIDI controller
+	  int j = inctrls[it->second],
+	    k = ui[0]->elems[j].port;
+	  float val = ctrlval(ui[0]->elems[j], data[2]);
+	  midivals[chan][k] = val;
+	  if (is_instr) {
+	    // instrument: update running voices on this channel
+	    for (boost::circular_buffer<int>::iterator it =
+		   vd->used_voices.begin();
+		 it != vd->used_voices.end(); it++) {
+	      int i = *it;
+	      if (vd->note_info[i].ch == chan)
+		*ui[i]->elems[j].zone = val;
+	    }
+	  } else {
+	    // simple effect: here we only have a single dsp instance and
+	    // we're operating in omni mode, so we just update the control no
+	    // matter what the midi channel is
+	    *ui[0]->elems[j].zone = val;
+	  }
 #if DEBUG_MIDICC
-      fprintf(stderr, "ctrl-change chan %d, ctrl %d, val %d\n", chan+1,
-          data[1], data[2]);
+	  fprintf(stderr, "ctrl-change chan %d, ctrl %d, val %d\n", chan+1,
+		  data[1], data[2]);
 #endif
-    }
+	}
 #endif
-    break;
+	break;
       }
       }
       break;
@@ -1635,61 +1635,61 @@ struct PFaustPlugin {
       // MIDI tuning standard
       bool realtime = data[0] == 0x7f;
       if ((sz == 19 && data[3] == 8) ||
-      (sz == 31 && data[3] == 9)) {
-    // MTS scale/octave tuning 1- or 2-byte form
-    bool onebyte = data[3] == 8;
-    unsigned chanmsk = (data[4]<<14) | (data[5]<<7) | data[6];
-    for (int i = 0; i < 12; i++) {
-      float t;
-      if (onebyte)
-        t = (data[i+7]-64)/100.0;
-      else
-        t = (((data[2*i+7]<<7)|data[2*i+8])-8192)/8192.0;
-      for (uint8_t ch = 0; ch < 16; ch++)
-        if (chanmsk & (1<<ch))
-          vd->tuning[ch][i] = t;
-    }
-    if (realtime) {
-      for (uint8_t ch = 0; ch < 16; ch++)
-        if (chanmsk & (1<<ch)) {
-          // update running voices on this channel
-          update_voices(ch);
-        }
-    }
+	  (sz == 31 && data[3] == 9)) {
+	// MTS scale/octave tuning 1- or 2-byte form
+	bool onebyte = data[3] == 8;
+	unsigned chanmsk = (data[4]<<14) | (data[5]<<7) | data[6];
+	for (int i = 0; i < 12; i++) {
+	  float t;
+	  if (onebyte)
+	    t = (data[i+7]-64)/100.0;
+	  else
+	    t = (((data[2*i+7]<<7)|data[2*i+8])-8192)/8192.0;
+	  for (uint8_t ch = 0; ch < 16; ch++)
+	    if (chanmsk & (1<<ch))
+	      vd->tuning[ch][i] = t;
+	}
+	if (realtime) {
+	  for (uint8_t ch = 0; ch < 16; ch++)
+	    if (chanmsk & (1<<ch)) {
+	      // update running voices on this channel
+	      update_voices(ch);
+	    }
+	}
 #if DEBUG_MTS
-    fprintf(stderr, "octave-tuning-%s (chan ",
-        realtime?"realtime":"non-realtime");
-    bool first = true;
-    for (uint8_t i = 0; i < 16; )
-      if (chanmsk & (1<<i)) {
-        uint8_t j;
-        for (j = i+1; j < 16 && (chanmsk&(1<<j)); )
-          j++;
-        if (first)
-          first = false;
-        else
-          fprintf(stderr, ",");
-        if (j > i+1)
-          fprintf(stderr, "%u-%u", i+1, j);
-        else
-          fprintf(stderr, "%u", i+1);
-        i = j;
-      } else
-        i++;
-    fprintf(stderr, "):");
-    if (onebyte) {
-      for (int i = 7; i < 19; i++) {
-        int val = data[i];
-        fprintf(stderr, " %d", val-64);
-      }
-    } else {
-      for (int i = 7; i < 31; i++) {
-        int val = data[i++] << 7;
-        val |= data[i];
-        fprintf(stderr, " %g", ((double)val-8192.0)/8192.0*100.0);
-      }
-    }
-    fprintf(stderr, "\n");
+	fprintf(stderr, "octave-tuning-%s (chan ",
+		realtime?"realtime":"non-realtime");
+	bool first = true;
+	for (uint8_t i = 0; i < 16; )
+	  if (chanmsk & (1<<i)) {
+	    uint8_t j;
+	    for (j = i+1; j < 16 && (chanmsk&(1<<j)); )
+	      j++;
+	    if (first)
+	      first = false;
+	    else
+	      fprintf(stderr, ",");
+	    if (j > i+1)
+	      fprintf(stderr, "%u-%u", i+1, j);
+	    else
+	      fprintf(stderr, "%u", i+1);
+	    i = j;
+	  } else
+	    i++;
+	fprintf(stderr, "):");
+	if (onebyte) {
+	  for (int i = 7; i < 19; i++) {
+	    int val = data[i];
+	    fprintf(stderr, " %d", val-64);
+	  }
+	} else {
+	  for (int i = 7; i < 31; i++) {
+	    int val = data[i++] << 7;
+	    val |= data[i];
+	    fprintf(stderr, " %g", ((double)val-8192.0)/8192.0*100.0);
+	  }
+	}
+	fprintf(stderr, "\n");
 #endif
       }
     }
@@ -1710,12 +1710,12 @@ struct PFaustPlugin {
     tuning = num;
     if (tuning > 0) {
       process_sysex(mts->tuning[tuning-1].data,
-            mts->tuning[tuning-1].len);
+		    mts->tuning[tuning-1].len);
     } else {
       memset(vd->tuning, 0, sizeof(vd->tuning));
 #if DEBUG_MTS
       fprintf(stderr,
-          "octave-tuning-default (chan 1-16): equal temperament\n");
+	      "octave-tuning-default (chan 1-16): equal temperament\n");
 #endif
 #endif
     }
@@ -2118,7 +2118,7 @@ bool VSTWrapper::string2parameter(VstInt32 index, char *text)
     plugin->poly = val;
 #if FAUST_MTS
   } else if (index == k+1 && plugin->mts &&
-         plugin->mts->tuning.size() > 0) {
+	     plugin->mts->tuning.size() > 0) {
     plugin->change_tuning(atoi(text));
 #endif
   } else
@@ -2136,7 +2136,7 @@ bool VSTWrapper::getInputProperties(VstInt32 index,
   if (index < 0 || index >= n)
     return false;
   snprintf(properties->label, kVstMaxLabelLen,
-       "%s input #%d", dsp_name, index);
+	   "%s input #%d", dsp_name, index);
   sprintf(properties->shortLabel, "In%d", index);
   properties->flags = kVstPinIsActive;
   // XXXTODO: deal with multi-channel setups (>2) here
@@ -2153,7 +2153,7 @@ bool VSTWrapper::getOutputProperties(VstInt32 index,
   if (index < 0 || index >= n)
     return false;
   snprintf(properties->label, kVstMaxLabelLen,
-       "%s output #%d", dsp_name, index);
+	   "%s output #%d", dsp_name, index);
   sprintf(properties->shortLabel, "Out%d", index);
   properties->flags = kVstPinIsActive;
   // XXXTODO: deal with multi-channel setups (>2) here
@@ -2242,7 +2242,7 @@ VstInt32 VSTWrapper::processEvents(VstEvents* events)
       plugin->process_sysex(data, sz);
     } else {
       fprintf(stderr, "%s: unknown event type %d\n",
-          PFaustPlugin::pluginName(), events->events[i]->type);
+	      PFaustPlugin::pluginName(), events->events[i]->type);
     }
   }
   return 1;
