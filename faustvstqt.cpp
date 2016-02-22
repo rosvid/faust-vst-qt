@@ -1782,9 +1782,6 @@ public:
   float getMaximum(VstInt32 index);
   float getStep(VstInt32 index);
   int isPassiveControl(VstInt32 index);
-  int getFreq();
-  int getGain();
-  int getGate();
   int getMaxVoices();
 
 private:
@@ -2313,21 +2310,6 @@ int VSTWrapper::isPassiveControl(VstInt32 index)
     return 0;
 }
 
-int VSTWrapper::getFreq()
-{
-  return plugin->freq;
-}
-
-int VSTWrapper::getGain()
-{
-  return plugin->gain;
-}
-
-int VSTWrapper::getGate()
-{
-  return plugin->gate;
-}
-
 int VSTWrapper::getMaxVoices()
 {
   return plugin->maxvoices;
@@ -2353,9 +2335,6 @@ int VSTWrapper::getMaxVoices()
 
 std::list<GUI*> GUI::fGuiList;
 
-static int argc = 1;
-static char* argv[0] = {};
-
 /* Define this to get debugging output from the Qt-related code, or add the
    corresponding option to the qmake project options in the faust2faustvstqt
    script to achieve the same effect. Setting this to a value >1 will give
@@ -2372,6 +2351,22 @@ static char* argv[0] = {};
 Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
   widget(NULL), qtinterface(NULL), hostWindow(NULL)
 {
+  static int argc = 1;
+  static char* argv[0] = {};
+  if(qApp) {
+#if FAUSTQT_DEBUG
+    qDebug() << "qApp already exists";
+#endif
+  } else {
+#if FAUSTQT_DEBUG
+    qDebug() << "qApp is created!";
+#endif
+    new QApplication(argc, argv);
+  }
+
+#if FAUSTQT_DEBUG
+  qDebug() << "qApp=" << qApp;
+#endif
 }
 
 /**
@@ -2458,21 +2453,6 @@ bool Editor_faustvstqt::open(void *ptr)
   qDebug() << "open editor: " << ptr;
 #endif
   AEffEditor::open(ptr);
-
-  if(qApp) {
-#if FAUSTQT_DEBUG
-    qDebug() << "qApp already exists";
-#endif
-  } else {
-#if FAUSTQT_DEBUG
-    qDebug() << "qApp is created!";
-#endif
-    new QApplication(argc, argv);
-  }
-
-#if FAUSTQT_DEBUG
-  qDebug() << "qApp=" << qApp;
-#endif
 
   widget = new QScrollArea();
   widget->setWidgetResizable(true);
