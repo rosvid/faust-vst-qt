@@ -172,6 +172,8 @@ public:
    VST UI interface
  ***************************************************************************/
 
+#include <string.h>
+
 enum ui_elem_type_t {
   UI_BUTTON, UI_CHECK_BUTTON,
   UI_V_SLIDER, UI_H_SLIDER, UI_NUM_ENTRY,
@@ -207,6 +209,9 @@ protected:
   void add_elem(ui_elem_type_t type, const char *label, float *zone,
         float min, float max);
 
+  bool have_freq, have_gain, have_gate;
+  bool is_voice_ctrl(const char *label);
+
 public:
   virtual void addButton(const char* label, float* zone);
   virtual void addCheckButton(const char* label, float* zone);
@@ -230,6 +235,7 @@ public:
 PFaustUI::PFaustUI(int maxvoices)
 {
   is_instr = maxvoices>0;
+  have_freq = have_gain = have_gate = false;
   nelems = nports = 0;
   elems = NULL;
 }
@@ -267,9 +273,7 @@ inline void PFaustUI::add_elem(ui_elem_type_t type, const char *label)
   nelems++;
 }
 
-static bool is_voice_ctrl(const char *label);
-
-#define portno(label) ((is_instr && is_voice_ctrl(label))?-1:nports++)
+#define portno(label) (is_voice_ctrl(label)?-1:nports++)
 
 inline void PFaustUI::add_elem(ui_elem_type_t type, const char *label, float *zone)
 {
@@ -326,6 +330,20 @@ inline void PFaustUI::add_elem(ui_elem_type_t type, const char *label, float *zo
   elems[nelems].max = max;
   elems[nelems].step = 0.0;
   nelems++;
+}
+
+inline bool PFaustUI::is_voice_ctrl(const char *label)
+{
+  if (!is_instr)
+    return false;
+  else if (!have_freq && !strcmp(label, "freq"))
+    return (have_freq = true);
+  else if (!have_gain && !strcmp(label, "gain"))
+    return (have_gain = true);
+  else if (!have_gate && !strcmp(label, "gate"))
+    return (have_gate = true);
+  else
+    return false;
 }
 
 void PFaustUI::addButton(const char* label, float* zone)
@@ -397,7 +415,6 @@ class dsp {
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <boost/circular_buffer.hpp>
 
@@ -463,12 +480,6 @@ VST_EXPORT AEffect * main(audioMasterCallback audioMaster)
 //#define DEBUG_MIDICC 1 // controller messages
 //#define DEBUG_RPN 1 // RPN messages (pitch bend range, master tuning)
 //#define DEBUG_MTS 1 // MTS messages (octave/scale tuning)
-
-static bool is_voice_ctrl(const char *label)
-{
-  return !strcmp(label, "freq") || !strcmp(label, "gain") ||
-    !strcmp(label, "gate");
-}
 
 // Note and voice data structures.
 
@@ -944,6 +955,7 @@ struct PFaustPlugin {
 	  inctrls[p++] = i;
 	  int p = ui[0]->elems[i].port;
 	  float val = ui[0]->elems[i].init;
+	  assert(p>=0);
 	  portvals[p] = ports[p] = val;
 	  units[p] = unit;
 	  for (int ch = 0; ch < 16; ch++)
@@ -2386,9 +2398,25 @@ class QTGUIWrapper : public UI
 protected:
   bool is_instr;
   QTGUI *ui;
+  bool have_freq, have_gain, have_gate;
+  bool is_voice_ctrl(const char *label)
+  {
+    if (!is_instr)
+      return false;
+    else if (!have_freq && !strcmp(label, "freq"))
+      return (have_freq = true);
+    else if (!have_gain && !strcmp(label, "gain"))
+      return (have_gain = true);
+    else if (!have_gate && !strcmp(label, "gate"))
+      return (have_gate = true);
+    else
+      return false;
+  }
 public:
   QTGUIWrapper(QTGUI *_ui, bool _is_instr = false) :
-    is_instr(_is_instr), ui(_ui) {}
+    is_instr(_is_instr), ui(_ui),
+    have_freq(false), have_gain(false), have_gate(false)
+  {}
   virtual ~QTGUIWrapper() {}
 
   // -- widget's layouts
@@ -2403,25 +2431,25 @@ public:
 
   // -- active widgets
   virtual void addButton(const char* label, FAUSTFLOAT* zone)
-  { if (!(is_instr && is_voice_ctrl(label)))
+  { if (!is_voice_ctrl(label))
       ui->addButton(label, zone); }
   virtual void addCheckButton(const char* label, FAUSTFLOAT* zone)
-  { if (!(is_instr && is_voice_ctrl(label)))
+  { if (!is_voice_ctrl(label))
       ui->addCheckButton(label, zone); }
   virtual void addVerticalSlider(const char* label, FAUSTFLOAT* zone,
 				 FAUSTFLOAT init, FAUSTFLOAT min,
 				 FAUSTFLOAT max, FAUSTFLOAT step)
-  { if (!(is_instr && is_voice_ctrl(label)))
+  { if (!is_voice_ctrl(label))
       ui->addVerticalSlider(label, zone, init, min, max, step); }
   virtual void addHorizontalSlider(const char* label, FAUSTFLOAT* zone,
 				   FAUSTFLOAT init, FAUSTFLOAT min,
 				   FAUSTFLOAT max, FAUSTFLOAT step) 	
-  { if (!(is_instr && is_voice_ctrl(label)))
+  { if (!is_voice_ctrl(label))
       ui->addHorizontalSlider(label, zone, init, min, max, step); }
   virtual void addNumEntry(const char* label, FAUSTFLOAT* zone,
 			   FAUSTFLOAT init, FAUSTFLOAT min,
 			   FAUSTFLOAT max, FAUSTFLOAT step)
-  { if (!(is_instr && is_voice_ctrl(label)))
+  { if (!is_voice_ctrl(label))
       ui->addNumEntry(label, zone, init, min, max, step); }
 
   // -- passive widgets	
