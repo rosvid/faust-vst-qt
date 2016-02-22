@@ -2793,11 +2793,13 @@ bool Editor_faustvstqt::open(void *ptr)
       vstParamCount++;
       vstParamSet = true;
     }
+    // save the QObject of this iteration
+    lastObject = (*i);
   }
 
 
 #if FAUSTQT_DEBUG>1
-  qDebug() << "VST Parameter assigned: " << vstParamCount;
+  qDebug() << "VST parameters assigned: " << vstParamCount;
 #endif
 
   qtinterface->run();
