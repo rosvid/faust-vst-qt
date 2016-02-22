@@ -47,9 +47,10 @@ gdb backtraces etc.) that you can get hold of.
   plugin architecture or the host is to blame. For the time being, you can
   work around this by opening the corresponding GUIs before starting playback.
 
-- The plugins won't work directly in Ardour at present (Ardour will hang if
-  you try this). However, we've had some success running them inside the LV2
-  version of falkTX's [Carla plugin](https://github.com/falkTX/Carla) instead.
+- The plugins won't work directly in Ardour at present, apparently due to
+  multithreading issues. However, we've had some success running them inside
+  the LV2 version of falkTX's [Carla plugin](https://github.com/falkTX/Carla)
+  instead, so you may want to try that.
 
 - Plugin windows have the wrong size and come up without scroll bars when they
   are opened for the first time in Qtractor. You can work around this by just
