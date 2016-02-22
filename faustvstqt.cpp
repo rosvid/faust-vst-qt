@@ -2353,9 +2353,8 @@ int VSTWrapper::getMaxVoices()
 
 std::list<GUI*> GUI::fGuiList;
 
-int argc = 1;
-char* argv[0] = {};
-int editorCounter = 0;
+static int argc = 1;
+static char* argv[0] = {};
 
 /* Define this to get debugging output from the Qt-related code, or add the
    corresponding option to the qmake project options in the faust2faustvstqt
@@ -2367,52 +2366,20 @@ int editorCounter = 0;
 
 /**
  * @brief Editor_faustvstqt::Editor_faustvstqt
- * - update editorCounter when creating an editor object (qApp management)
+ * - initializations that need to be done when creating an editor object
  * @param effect
  */
 Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
   widget(NULL), qtinterface(NULL), hostWindow(NULL)
 {
-  editorCounter++;
 }
 
 /**
  * @brief Editor_faustvstqt::~Editor_faustvstqt
- * - update editorCounter when creating an editor object, delete qApp if
- *   editorCounter==0
- * - closeAllWindows() is needed to prevent qApp from being deleted if
- *   open widgets exist
- * - exit() is needed to keep processEvents from running when qApp is deleted
- *   (to prevent crashes)
- * - Problem: editorCounter is maintained separately for each plug-in class
- *   (not globally for all Faust plug-ins). Therefore qApp is always deleted
- *   if there's no instance of a certain plug-in class any more, which causes
- *   all other open plug-in windows to lose their contents. This kludge seems
- *   to be needed to work around various host crashes for different reasons.
+ * - finalizations that need to be done when destroying an editor object
  */
 Editor_faustvstqt::~Editor_faustvstqt()
 {
-  editorCounter--;
-#if FAUSTQT_DEBUG
-  qDebug() << "editorCounter: " << editorCounter;
-  qDebug() << "topWindows: " << qApp->topLevelWindows().size();
-#endif
-#if 0 // disabled for now
-  /* This seems to be an awful kludge and more trouble than it's worth (if
-     anything at all). It also crashes Qt hosts such as Qtractor on exit. Why
-     is it again that we need to delete the global qApp (even if we didn't
-     create it), and why do we count open windows per Faust plugin class and
-     not globally? I didn't notice any adverse effects after completely
-     disabling this code, actually this seems to improve things. -ag */
-  if(editorCounter==0) {
-#if FAUSTQT_DEBUG
-    qDebug("delete qApp");
-#endif
-    qApp->closeAllWindows();
-    qApp->exit();
-    delete qApp;
-  }
-#endif
 }
 
 // This is a little wrapper class around QTGUI which takes care of eliminating
