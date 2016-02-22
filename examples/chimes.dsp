@@ -10,18 +10,11 @@ declare nvoices "16";
 
 import("music.lib");
 
-/* Groups: */
-
-mstr(x)	= hgroup("[1]", x); // master
-mod1(x)	= hgroup("[2] excitator", x); // modulation (excitator)
-mod2(x)	= vgroup("[3] resonators", x); // modulation (resonators)
-note(x)	= hgroup("[4]", x); // note a.k.a. per-voice params
-
 /* Control variables: */
 
 // master volume, pan
-vol	= hslider("vol [style:knob]", 0.5, 0, 10, 0.01);	// %
-pan	= hslider("pan [style:knob]", 0.5, 0, 1, 0.01);		// %
+vol	= hslider("/h:[0]/vol [style:knob]", 0.5, 0, 10, 0.01);	// %
+pan	= hslider("/h:[0]/pan [style:knob]", 0.5, 0, 1, 0.01);		// %
 
 // excitator and resonator parameters
 
@@ -55,9 +48,9 @@ decay4	= nentry("decay4 [style:knob]", 2.488, 0, 10, 0.001);	// decay time
 rq4	= nentry("rq4 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 
 // frequency, gain, gate
-freq	= note(nentry("freq", 440, 20, 20000, 1));	// Hz
-gain	= note(nentry("gain", 1, 0, 10, 0.01));		// %
-gate	= note(button("gate"));				// 0/1
+freq	= nentry("/freq", 440, 20, 20000, 1);	// Hz
+gain	= nentry("/gain", 1, 0, 10, 0.01);	// %
+gate	= button("/gate");			// 0/1
 
 /* Definition of the resonz filter. This is basically a biquad filter with
    pairs of poles near the desired resonance frequency and zeroes at -1 and
@@ -75,12 +68,12 @@ with {
 
 /* The excitator, a short burst of noise. */
 
-excitator(t)	= t : mod1(adsr(0, xdecay, 0, 0) : *(noise));
+excitator(t)	= t : hgroup("[2]excitator", adsr(0, xdecay, 0, 0) : *(noise));
 
 /* Bank of 5 resonators. */
 
 resonator(f,t,i,hrm,amp,decay,rq)
-		= (f,t,_) : mod2(hgroup("[%i]", g))
+		= (f,t,_) : vgroup("[3]resonators", hgroup("[%i]", g))
 with {
 	g(f,t)	= resonz(R,h)*(amp*b*env)
 	with {
@@ -103,4 +96,4 @@ resonators(f,t)	= resonator(f,t,0,hrm0,amp0,decay0,rq0)
 smooth(c)	= *(1-c) : +~*(c);
 
 process		= excitator(gate)*gain <: resonators(freq, gate)
-		: mstr(*(vol:smooth(0.99)) : panner(pan:smooth(0.99)));
+		: (*(vol:smooth(0.99)) : panner(pan:smooth(0.99)));

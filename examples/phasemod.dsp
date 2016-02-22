@@ -7,29 +7,20 @@ declare nvoices "16";
 
 import("music.lib");
 
-// groups
-
-mstr(x)	= hgroup("[1]", x); // master
-modl(x)	= hgroup("[2]", x); // modulation (aux synth params)
-env1(x)	= vgroup("[3]", x); // (first) envelop
-note(x)	= hgroup("[4]", x); // note a.k.a. per-voice params
-
-// control variables
-
 // master volume and pan
-vol	= hslider("vol [style:knob] [midi:ctrl 7]", 0.3, 0, 10, 0.01);	// %
-pan	= hslider("pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);	// %
+vol = vslider("/h:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 10, 0.01);
+pan = vslider("/h:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
 
 // ADSR envelop
-attack	= hslider("[1] attack", 0.01, 0, 1, 0.001);	// sec
-decay	= hslider("[2] decay", 0.3, 0, 1, 0.001);	// sec
-sustain = hslider("[3] sustain", 0.5, 0, 1, 0.01);	// %
-release = hslider("[4] release", 0.2, 0, 1, 0.001);	// sec
+attack	= hslider("/v:[3]/[1] attack", 0.01, 0, 1, 0.001);	// sec
+decay	= hslider("/v:[3]/[2] decay", 0.3, 0, 1, 0.001);	// sec
+sustain = hslider("/v:[3]/[3] sustain", 0.5, 0, 1, 0.01);	// %
+release = hslider("/v:[3]/[4] release", 0.2, 0, 1, 0.001);	// sec
 
 // voice parameters
-freq	= nentry("freq", 440, 20, 20000, 1);	// Hz
-gain	= nentry("gain", 1, 0, 10, 0.01);	// %
-gate	= button("gate");			// 0/1
+freq	= nentry("/freq", 440, 20, 20000, 1);	// Hz
+gain	= nentry("/gain", 1, 0, 10, 0.01);	// %
+gate	= button("/gate");			// 0/1
 
 // generic table-driven oscillator with phase modulation
 
@@ -52,9 +43,9 @@ with {
 
 smooth(c) = *(1-c) : +~*(c);
 
-process	= tblosc(1<<16, sin, note(freq), mod) * env * (note(gain))
-  :  mstr(*(vol:smooth(0.99)) : panner(pan:smooth(0.99)))
+process	= tblosc(1<<16, sin, freq, mod) * env * gain
+  :  (*(vol:smooth(0.99)) : panner(pan:smooth(0.99)))
 with {
-	env = note(gate) : env1(adsr(attack, decay, sustain, release));
-	mod = 2*PI*tblosc(1<<16, sin, note(freq), 0)*env;
+	env = gate : adsr(attack, decay, sustain, release);
+	mod = 2*PI*tblosc(1<<16, sin, freq, 0)*env;
 };
