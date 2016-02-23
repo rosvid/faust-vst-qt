@@ -2048,6 +2048,18 @@ void VSTWrapper::getParameterDisplay(VstInt32 index, char *text)
   }
 }
 
+static inline float clamp(float min, float max, float val)
+{
+  if (min<=max) {
+    if (val < min) val = min;
+    if (val > max) val = max;
+  } else {
+    if (val > min) val = min;
+    if (val < max) val = max;
+  }
+  return val;
+}
+
 float VSTWrapper::getParameter(VstInt32 index)
 {
   int k = plugin->ui[0]->nports;
@@ -2059,7 +2071,9 @@ float VSTWrapper::getParameter(VstInt32 index)
     if (min == max)
       return 0.0f;
     else
-      return (plugin->ports[index]-min)/(max-min);
+      // Clamp the value to the 0..1 VST range. Some VST hosts (e.g., Carla)
+      // don't like values falling outside that range.
+      return clamp(0.0, 1.0, (plugin->ports[index]-min)/(max-min));
   } else if (index == k && plugin->maxvoices > 0) {
     return (float)plugin->poly/(float)plugin->maxvoices;
 #if FAUST_MTS
