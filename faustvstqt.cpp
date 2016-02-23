@@ -2650,7 +2650,7 @@ bool Editor_faustvstqt::open(void *ptr)
 
         passiveControls.append(num);
 
-        // the corresponding diplay of the vBargraphs is now set
+        // the corresponding display of the vBargraphs is now set
         vBargraphChecked = true;
       } else if(effect->isPassiveControl(vstParamCount)==2
                 && vBargraphChecked) {
