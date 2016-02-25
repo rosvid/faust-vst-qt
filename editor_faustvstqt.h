@@ -36,6 +36,7 @@ public:
 
 protected:
     ERect rectangle;
+    float voices_zone, tuning_zone;
 
 signals:
     void getVSTParameters(QObject* object);

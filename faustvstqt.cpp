@@ -1795,6 +1795,8 @@ public:
   float getStep(VstInt32 index);
   int isPassiveControl(VstInt32 index);
   int getMaxVoices();
+  int getNumTunings();
+  int getNumControls();
 
 private:
   PFaustPlugin *plugin;
@@ -2285,11 +2287,19 @@ VstInt32 VSTWrapper::processEvents(VstEvents* events)
 float VSTWrapper::getMinimum(VstInt32 index)
 {
   int k = plugin->ui[0]->nports;
-  if (index >= 0 && index < k) {
+  if (index < 0)
+    return 0.0f;
+  else if (index < k) {
     int j = plugin->ctrls[index];
     assert(index == plugin->ui[0]->elems[j].port);
     float min = plugin->ui[0]->elems[j].min;
     return min;
+  } else if (index == k && plugin->maxvoices > 0) {
+    return 0.0f;
+#if FAUST_MTS
+  } else if (index == k+1 && plugin->n_tunings > 0) {
+    return 0.0f;
+#endif
   } else
     return 0.0f;
 }
@@ -2297,11 +2307,19 @@ float VSTWrapper::getMinimum(VstInt32 index)
 float VSTWrapper::getMaximum(VstInt32 index)
 {
   int k = plugin->ui[0]->nports;
-  if (index >= 0 && index < k) {
+  if (index < 0)
+    return 0.0f;
+  else if (index < k) {
     int j = plugin->ctrls[index];
     assert(index == plugin->ui[0]->elems[j].port);
     float max = plugin->ui[0]->elems[j].max;
     return max;
+  } else if (index == k && plugin->maxvoices > 0) {
+    return (float)plugin->maxvoices;
+#if FAUST_MTS
+  } else if (index == k+1 && plugin->n_tunings > 0) {
+    return (float)plugin->mts->tuning.size();
+#endif
   } else
     return 0.0f;
 }
@@ -2309,11 +2327,19 @@ float VSTWrapper::getMaximum(VstInt32 index)
 float VSTWrapper::getStep(VstInt32 index)
 {
   int k = plugin->ui[0]->nports;
-  if (index >= 0 && index < k) {
+  if (index < 0)
+    return 0.0f;
+  else if (index < k) {
     int j = plugin->ctrls[index];
     assert(index == plugin->ui[0]->elems[j].port);
     float step = plugin->ui[0]->elems[j].step;
     return step;
+  } else if (index == k && plugin->maxvoices > 0) {
+    return 1.0f;
+#if FAUST_MTS
+  } else if (index == k+1 && plugin->n_tunings > 0) {
+    return 1.0f;
+#endif
   } else
     return 0.0f;
 }
@@ -2339,6 +2365,20 @@ int VSTWrapper::isPassiveControl(VstInt32 index)
 int VSTWrapper::getMaxVoices()
 {
   return plugin->maxvoices;
+}
+
+int VSTWrapper::getNumTunings()
+{
+#if FAUST_MTS
+  return plugin->n_tunings;
+#else
+  return 0;
+#endif
+}
+
+int VSTWrapper::getNumControls()
+{
+  return plugin->ui[0]->nports;;
 }
 
 
@@ -2405,13 +2445,16 @@ Editor_faustvstqt::~Editor_faustvstqt()
 
 // This is a little wrapper class around QTGUI which takes care of eliminating
 // the freq/gain/gate controls of instruments in the user interface when
-// running the dsp's buildUserInterface method. -ag
+// running the dsp's buildUserInterface method. It also adds polyphony and
+// tuning controls to instruments as needed. -ag
 
 class QTGUIWrapper : public UI
 {
 protected:
   bool is_instr;
   QTGUI *ui;
+  int level, maxvoices, numtunings;
+  float *voices_zone, *tuning_zone;
   bool have_freq, have_gain, have_gate;
   bool is_voice_ctrl(const char *label)
   {
@@ -2427,21 +2470,37 @@ protected:
       return false;
   }
 public:
-  QTGUIWrapper(QTGUI *_ui, bool _is_instr = false) :
-    is_instr(_is_instr), ui(_ui),
+  QTGUIWrapper(QTGUI *_ui, int _maxvoices, int _numtunings,
+	       float *_voices_zone, float *_tuning_zone) :
+    is_instr(_maxvoices>0), ui(_ui), level(0),
+    maxvoices(_maxvoices), numtunings(_numtunings),
+    voices_zone(_voices_zone), tuning_zone(_tuning_zone),
     have_freq(false), have_gain(false), have_gate(false)
   {}
   virtual ~QTGUIWrapper() {}
 
   // -- widget's layouts
   virtual void openTabBox(const char* label)
-  { ui->openTabBox(label); }
+  { ui->openTabBox(label); level++; }
   virtual void openHorizontalBox(const char* label)
-  { ui->openHorizontalBox(label); }
+  { ui->openHorizontalBox(label); level++; }
   virtual void openVerticalBox(const char* label)
-  { ui->openVerticalBox(label); }
+  { ui->openVerticalBox(label); level++; }
   virtual void closeBox()
-  { ui->closeBox(); }
+  {
+    if (--level == 0 && is_instr) {
+#if VOICE_CTRLS
+      // Add polyphony and tuning controls (experimental).
+      ui->addHorizontalSlider("polyphony", voices_zone,
+			      maxvoices/2, 0, maxvoices, 1);
+#if FAUST_MTS
+      if (numtunings>0)
+	ui->addHorizontalSlider("tuning", tuning_zone, 0, 0, numtunings, 1);
+#endif
+#endif
+    }
+    ui->closeBox();
+  }
 
   // -- active widgets
   virtual void addButton(const char* label, FAUSTFLOAT* zone)
@@ -2508,7 +2567,9 @@ bool Editor_faustvstqt::open(void *ptr)
 #endif
   // We build the QTGUI indirectly through QTGUIWrapper whose sole purpose is
   // to eliminate the voice controls in case of an instrument plugin.
-  QTGUIWrapper qtwrapper(qtinterface, effect->getMaxVoices()>0);
+  QTGUIWrapper qtwrapper(qtinterface,
+			 effect->getMaxVoices(), effect->getNumTunings(),
+			 &voices_zone, &tuning_zone);
   dsp->buildUserInterface(&qtwrapper);
 
   // update the size of the QTGUI after creating the GUI elements
@@ -3072,6 +3133,16 @@ void Editor_faustvstqt::updateVST()
   effect->setParameter(vstParam, newFloat);
 #if FAUSTQT_DEBUG>1
   qDebug() << "VST: new VST value: " << effect->getParameter(vstParam);
+#endif
+#if VOICE_CTRLS
+  if (vstParam >= effect->getNumControls()) {
+    // Extra polyphony and tuning controls. Generate some informative tooltips
+    // for these so that the user understands the meaning of these values.
+    QWidget *widget = qobject_cast<QWidget*>(QObject::sender());
+    char text[32];
+    effect->getParameterDisplay(vstParam, text);
+    widget->setToolTip(text);
+  }
 #endif
 }
 
