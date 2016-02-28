@@ -48,46 +48,25 @@ if [[ $(uname) == Darwin ]]; then
     dllext=".vst"
 fi
 
-# We recognize the following special options here:
-
-# plugin-specific options:
-
-# -nometa: ignore metadata (author information etc.) from the Faust source
-# -nomidicc: plugin doesn't process MIDI control data
-# -notuning: disable the tuning control (VSTi only)
-# -nvoices N: number of synth voices (VSTi only; arg must be an integer)
-
-# Qt-specific options:
-
-# -voicectrls: extra polyphony and tuning controls (VSTi only)
-
-# This adds an extra polyphony slider (and, if applicable, also a tuning
-# slider) to each instrument, at the bottom of the GUI. Note that these aren't
-# actual Faust-generated parameters but are added by the VST architecture so
-# that you can control the number of synth voices and the MTS tuning of the
-# synth at runtime. They aren't included in the GUI by default so that only
-# the actual Faust control variables of the synth will be shown. (Even then
-# you can still control these extra parameters using automation or whatever
-# generic user interface the VST host provides.) However, you may want to add
-# these for convenience if you don't mind the extra clutter.
-
-# -style: select the stylesheet to be used
-
-# This must be the basename of a stylesheet in $FAUSTINC/gui/Styles/
-# (one of Default, Blue, Grey, Salmon at the time of this writing).
-
-# Build options:
-
-# -keep: retain the build directory
-
-# When using this option, the build directory won't be deleted but can be
-# found under the dsp basename after compilation. This may be useful for
-# debugging and inspection purposes, if there are C++ compilation errors to
-# be sorted out, or if you want change stuff manually.
-
+# dispatch command arguments
 for ((i=1;i<$#+1;i++)); do
     p=${!i}
-    if [ $p = "-omp" ]; then
+    if [ $p = "-help" ] || [ $p = "-h" ]; then
+	cat <<EOF
+faust2faustvstqt [options ...] <file.dsp>
+Options:
+-http: activate HTTP control (add -qrcode to activate QR code generation)
+-keep: retain the build directory
+-nometa: ignore metadata (author information etc.) from the Faust source
+-nomidicc: plugin doesn't process MIDI control data
+-notuning: disable the tuning control (VSTi only)
+-nvoices N: number of synth voices (VSTi only; arg must be an integer)
+-osc: activate OSC control
+-style S: select the stylesheet (arg must be Default, Blue, Grey or Salmon)
+-voicectrls: extra polyphony and tuning controls (VSTi only)
+EOF
+	exit 0
+    elif [ $p = "-omp" ]; then
     	: ignore
     elif [ $p = "-icc" ]; then
 	CXX=icpc

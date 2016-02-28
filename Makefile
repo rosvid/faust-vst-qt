@@ -52,6 +52,9 @@ SDKSRC = $(firstword $(patsubst %/,%,$(dir $(wildcard $(addsuffix vstplugmain.cp
 # OPTS += -keep
 # preferred widget style (qss); must be one of Default, Blue, Grey, Salmon
 # OPTS += -style Grey
+# HTTP and OSC support (please check the Faust manual for details)
+# OPTS += -http -qrcode
+# OPTS += -osc
 
 # Shared library suffix.
 DLL = .so
