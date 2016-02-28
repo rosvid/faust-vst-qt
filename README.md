@@ -55,7 +55,10 @@ options are available:
 
 - The `-style` option selects the stylesheet to be used. This must be the
   basename of a stylesheet in `<faust-prefix>/include/faust/gui/Styles/` (one
-  of Default, Blue, Grey, Salmon at the time of this writing).
+  of Default, Blue, Grey, Salmon at the time of this writing). If this option
+  is not used then the default Qt style will be used (which is generally
+  preferable since it allows the GUI to use a theme set through the desktop
+  environment and/or the host application).
 
 - The `-keep` option retains the build directory after compilation is
   completed. When using this option, the build directory won't be deleted but
