@@ -6,6 +6,12 @@
 #include <faust/gui/faustqt.h>
 
 class VSTWrapper;
+#ifdef OSCCTRL
+class OSCUI;
+#endif
+#ifdef HTTPCTRL
+class httpdUI;
+#endif
 
 class Editor_faustvstqt : public QObject, public AEffEditor{
     Q_OBJECT
@@ -13,6 +19,12 @@ class Editor_faustvstqt : public QObject, public AEffEditor{
     VSTWrapper* effect;
     QScrollArea* widget;
     QTGUI* qtinterface;
+#ifdef OSCCTRL
+    OSCUI* oscinterface;
+#endif
+#ifdef HTTPCTRL
+    httpdUI *httpdinterface;
+#endif
     QWindow* hostWindow;
 
     // passiveControls: passive control elements needing continuous GUI update

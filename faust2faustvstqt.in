@@ -26,6 +26,7 @@ VOICE_CTRLS=0
 
 KEEP="no"
 STYLE=""
+QTEXTRA=""
 
 # These should be detected properly at build time, but you can also set them
 # to alternative locations using the SDK and SDKSRC environment variables.
@@ -92,9 +93,13 @@ for ((i=1;i<$#+1;i++)); do
 	CXX=icpc
     	CXXFLAGS="-O3 -xHost -ftz -fno-alias -fp-model fast=2"
     elif [ $p = "-osc" ]; then
-    	: ignore
+    	OSCDEFS="DEFINES += OSCCTRL"
+        OSCLIBS="-lOSCFaust"
     elif [ $p = "-httpd" ]; then
-    	: ignore
+    	HTTPDEFS="DEFINES += HTTPCTRL"
+	HTTPLIBS="-lHTTPDFaust -lmicrohttpd -lqrencode"
+    elif [ $p = "-qrcode" ]; then # requires -httpd
+	QRDEFS="DEFINES += QRCODECTRL"
     elif [ $p = "-nometa" ]; then
     	FAUST_META=0
     elif [ $p = "-nomidicc" ]; then
@@ -126,6 +131,10 @@ for ((i=1;i<$#+1;i++)); do
 	OPTIONS="$OPTIONS $p"
     fi
 done
+
+if [ -n "$OSCDEFS" -o -n "$HTTPDEFS" ]; then
+    QTEXTRA="network"
+fi
 
 FILES=( $FILES )
 if [ ${#FILES[@]} = 0 ]; then
@@ -213,7 +222,7 @@ else
     # compile c++ to binary
     (
         cd "$tmpdir"
-       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=$CPPFLAGS" $STYLE_CXXFLAGS "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLIB" "INCLUDEPATH+=$ABSDIR" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" $RESOURCES
+       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras $QTEXTRA" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=$CPPFLAGS" $STYLE_CXXFLAGS "LIBS+=$ARCHLIB $OSCLIBS $HTTPLIBS" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLIB" "INCLUDEPATH+=$ABSDIR" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" $RESOURCES "$OSCDEFS" "$HTTPDEFS" "$QRDEFS"
         $QMAKE *.pro
       	make
     ) > /dev/null

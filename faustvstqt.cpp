@@ -112,11 +112,6 @@ inline double 	min (double a, long b) 		{ return (a<b) ? a : b; }
 inline double 	min (float a, double b) 	{ return (a<b) ? a : b; }
 inline double 	min (double a, float b) 	{ return (a<b) ? a : b; }
 
-// abs is now predefined
-//template<typename T> T abs (T a)		{ return (a<T(0)) ? -a : a; }
-
-inline int	lsr (int x, int n)		{ return int(((unsigned int)x) >> n); }
-
 /******************************************************************************
 *******************************************************************************
 
@@ -410,7 +405,7 @@ class dsp {
 //  VST interface
 //----------------------------------------------------------------------------
 
-#line 396 "faustvstqt.cpp"
+#line 409 "faustvstqt.cpp"
 
 #include <assert.h>
 #include <stdio.h>
@@ -2278,7 +2273,8 @@ VstInt32 VSTWrapper::processEvents(VstEvents* events)
 
 /* Qt-specific part starts here. *********************************************/
 
-/* Code below is by Roman Svidler (rosvid). */
+/* Code below is by Roman Svidler (rosvid). Some improvements and HTTPD/OSC
+   support added by Albert Gräf (ag). */
 
 /***
  * getter methods needed by the editor class (see open(..))
@@ -2388,16 +2384,26 @@ int VSTWrapper::getNumControls()
  ****************************************************************
  ****************************************************************/
 
+// OSCUI.h and httpdUI.h pull in their own definition of the Meta struct,
+// prevent name clashes with our version.
+#define Meta FaustMeta
+
 #include <iostream>
 #include <QApplication>
 #include <faust/gui/faustqt.h>
+#ifdef OSCCTRL
+#include <faust/gui/OSCUI.h>
+#endif
+#ifdef HTTPCTRL
+#include <faust/gui/httpdUI.h>
+#endif
 
 #include <QWidget>
 #include <QWindow>
 #include <QX11Info>
 #include <X11/Xlib.h>
 
-#line 2353 "faustvstqt.cpp"
+#line 2407 "faustvstqt.cpp"
 
 std::list<GUI*> GUI::fGuiList;
 
@@ -2415,10 +2421,17 @@ std::list<GUI*> GUI::fGuiList;
  * @param effect
  */
 Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
-  widget(NULL), qtinterface(NULL), hostWindow(NULL)
+  widget(NULL), qtinterface(NULL),
+#ifdef OSCCTRL
+  oscinterface(NULL),
+#endif
+#ifdef HTTPCTRL
+  httpdinterface(NULL),
+#endif
+  hostWindow(NULL)
 {
-  static int argc = 1;
-  static char* argv[0] = {};
+  static int argc = 0;
+  static char* argv[1] = {0};
   if(qApp) {
 #if FAUSTQT_DEBUG
     qDebug() << "qApp already exists";
@@ -2550,6 +2563,8 @@ public:
  */
 bool Editor_faustvstqt::open(void *ptr)
 {
+  static int argc = 0;
+  static char* argv[1] = {0};
 #if FAUSTQT_DEBUG
   qDebug() << "open editor: " << ptr;
 #endif
@@ -2571,6 +2586,25 @@ bool Editor_faustvstqt::open(void *ptr)
 			 effect->getMaxVoices(), effect->getNumTunings(),
 			 &voices_zone, &tuning_zone);
   dsp->buildUserInterface(&qtwrapper);
+
+  // HTTPD and OSC support (experimental)
+#ifdef HTTPCTRL
+  httpdinterface = new httpdUI(PFaustPlugin::pluginName(),
+			       dsp->getNumInputs(), dsp->getNumOutputs(),
+			       argc, argv);
+  dsp->buildUserInterface(httpdinterface);
+#if FAUSTQT_DEBUG
+  qDebug() << "HTTPD is on";
+#endif
+#endif
+
+#ifdef OSCCTRL
+  oscinterface = new OSCUI(PFaustPlugin::pluginName(), argc, argv);
+  dsp->buildUserInterface(oscinterface);
+#if FAUSTQT_DEBUG
+  qDebug() << "OSC is on";
+#endif
+#endif
 
   // update the size of the QTGUI after creating the GUI elements
   qtinterface->adjustSize();
@@ -2852,6 +2886,20 @@ bool Editor_faustvstqt::open(void *ptr)
   qDebug() << "VST parameters assigned: " << vstParamCount;
 #endif
 
+#ifdef HTTPCTRL
+  httpdinterface->run();
+#ifdef QRCODECTRL
+  // FIXME: This will pop up each time the GUI is opened. We should maybe have
+  // a little button in the GUI somewhere so that the user can show the QR
+  // code when needed.
+  qtinterface->displayQRCode(httpdinterface->getTCPPort());
+#endif
+#endif
+
+#ifdef OSCCTRL
+  oscinterface->run();
+#endif
+
   qtinterface->run();
 
   // set the style sheet for this GUI, if any
@@ -2934,8 +2982,17 @@ void Editor_faustvstqt::idle()
  */
 void Editor_faustvstqt::close()
 {
+#ifdef HTTPCTRL
+  httpdinterface->stop();
+  delete httpdinterface;
+  httpdinterface = NULL;
+#endif
+#ifdef OSCCTRL
+  oscinterface->stop();
+  delete oscinterface;
+  oscinterface = NULL;
+#endif
   qtinterface->stop();
-
   delete qtinterface;
   qtinterface = NULL;
   delete widget;
