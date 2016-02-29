@@ -89,25 +89,13 @@ plugins. The next plugin then uses 5513 as its OSC input port, etc.)
 
 ## Known Bugs
 
-The plugin architecture works by embedding Qt GUIs in windows provided by the
-VST host, which unfortunately seems to cause trouble with some host
-applications. Below is a list of known issues related to different hosts;
-we'll hopefully be able to fix these in the future. If you notice any other
-issues then please file a detailed bug report with all information (including
-gdb backtraces etc.) that you can get hold of.
+VST plugins with Qt5 GUIs are known to be problematic with some hosts on
+Linux. In our tests, the plugin GUIs worked fine with Bitwig Studio, Carla and
+Qtractor, but caused occasional crashes with Tracktion6 and didn't work at all
+with Ardour. We hope to get these issues sorted out some time, but for now the
+plugin GUIs have been disabled in the latter two hosts. We suggest running the
+plugins through falkTX's plugin host [Carla](https://github.com/falkTX/Carla)
+in Ardour and Tracktion6 instead, this seems to work fine.
 
-- Some plugins cause audio dropouts with some VST hosts when their GUI is
-  opened. The reasons for this aren't clear yet, and we don't know whether the
-  plugin architecture or the host is to blame. For the time being, you can
-  work around this by opening the corresponding GUIs before starting playback.
-
-- The plugins won't work directly in Ardour at present, apparently due to
-  multithreading issues. However, we've had some success running them inside
-  the LV2 version of falkTX's [Carla plugin](https://github.com/falkTX/Carla)
-  instead, so you may want to try that.
-
-- Plugin windows have the wrong size and come up without scroll bars when they
-  are opened for the first time in Qtractor. You can work around this by just
-  closing and reopening the GUIs, they will look all right the second and
-  subsequent times. Or run them through Carla, it will get the display right
-  on first attempt. :)
+Please submit a bug report if you notice any further issues. Of course,
+suggestions, pull requests and patches are also appreciated.

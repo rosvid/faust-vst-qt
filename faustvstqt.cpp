@@ -1741,6 +1741,12 @@ MTSTunings *PFaustPlugin::mts = 0;
 #include "audioeffectx.h"
 #include "editor_faustvstqt.h"
 
+/* XXXFIXME: Some hosts are blacklisted here due to frequent crashes in the
+   GUI code. The plugins will run there, but without a custom GUI (to get the
+   GUI, you can run them inside Carla instead). NOTE: Simply comment out the
+   following define to enable the GUI in all hosts. */
+#define HOST_BLACKLIST { "Ardour", "Tracktion", NULL }
+
 class VSTWrapper : public AudioEffectX
 {
 public:
@@ -1792,10 +1798,12 @@ public:
   int getMaxVoices();
   int getNumTunings();
   int getNumControls();
+  const char *getHostName();
 
 private:
   PFaustPlugin *plugin;
   char progname[kVstMaxProgNameLen+1];
+  char host[65];
   float *defprog;
 };
 
@@ -1883,6 +1891,11 @@ VSTWrapper::VSTWrapper(audioMasterCallback audioMaster)
   // Get the initial sample rate from the VST host.
   const int rate = getSampleRate();
   plugin = new PFaustPlugin(num_voices, rate);
+  // Get the name of the host (product string).
+  strcpy(host, "Unknown");
+  // Some hosts like Ardour properly report the product string even though
+  // getHostProductString() returns false, so we just ignore the return value.
+  getHostProductString(host);
   // VST-specific initialization:
   if (audioMaster) {
     setNumInputs(plugin->dsp[0]->getNumInputs());
@@ -1892,6 +1905,11 @@ VSTWrapper::VSTWrapper(audioMasterCallback audioMaster)
     // XXXFIXME: Maybe do something more clever for the unique id.
     setUniqueID((VstInt32)idhash(dsp_name));
 
+#ifdef HOST_BLACKLIST
+    char *blacklist[] = HOST_BLACKLIST, **b = blacklist;
+    while (*b && strcmp(host, *b)) ++b;
+    if (!*b)
+#endif
     setEditor(new Editor_faustvstqt(this));
   }
   // We only provide one "program" (a.k.a. built-in control preset), which
@@ -2377,6 +2395,11 @@ int VSTWrapper::getNumControls()
   return plugin->ui[0]->nports;;
 }
 
+const char *VSTWrapper::getHostName()
+{
+  return host;
+}
+
 
 /****************************************************************
  ****************************************************************
@@ -2403,7 +2426,7 @@ int VSTWrapper::getNumControls()
 #include <QX11Info>
 #include <X11/Xlib.h>
 
-#line 2407 "faustvstqt.cpp"
+#line 2430 "faustvstqt.cpp"
 
 std::list<GUI*> GUI::fGuiList;
 
@@ -2445,6 +2468,11 @@ Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
 
 #if FAUSTQT_DEBUG
   qDebug() << "qApp=" << qApp;
+  static bool first_time = false;
+  if (!first_time) {
+    first_time = true;
+    qDebug() << "VST host: " << effect->getHostName();
+  }
 #endif
 }
 
@@ -2637,6 +2665,8 @@ bool Editor_faustvstqt::open(void *ptr)
 
   // adjust the widget size
   widget->resize(rectangle.right, rectangle.bottom);
+  // some hosts (e.g., Qtractor) need this to properly adjust the window size
+  effect->sizeWindow(rectangle.right, rectangle.bottom);
 
   // determine all children of qtinterface of type QObject*
   QList<QObject*> allObjects = qtinterface->findChildren<QObject*>();
