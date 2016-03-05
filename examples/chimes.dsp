@@ -13,8 +13,8 @@ import("music.lib");
 /* Control variables: */
 
 // master volume, pan
-vol	= hslider("/h:[0]/vol [style:knob]", 0.5, 0, 10, 0.01);	// %
-pan	= hslider("/h:[0]/pan [style:knob]", 0.5, 0, 1, 0.01);		// %
+vol	= vslider("/h:[0]/vol [style:knob]", 0.5, 0, 1, 0.01);	// %
+pan	= vslider("/h:[0]/pan [style:knob]", 0.5, 0, 1, 0.01);		// %
 
 // excitator and resonator parameters
 

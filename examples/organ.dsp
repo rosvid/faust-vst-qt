@@ -11,7 +11,7 @@ declare nvoices "16";
 import("music.lib");
 
 // master controls (volume and stereo panning)
-vol = vslider("/h:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 10, 0.01);
+vol = vslider("/h:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
 pan = vslider("/h:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
 
 // relative amplitudes of the different partials

@@ -8,13 +8,12 @@ declare nvoices "16";
 import("music.lib");
 
 // master volume and pan
-vol	= hslider("/h:[1]/vol [style:knob] [midi:ctrl 7] [unit:dB]",
-	      -10, -96, 96, 0.1);
-pan	= hslider("/h:[1]/pan [style:knob] [midi:ctrl 8]", 0, -1, 1, 0.01);
+vol	= vslider("/h:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
+pan	= vslider("/h:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
 
 // modulation (excitator and resonator parameters)
-size	= hslider("/h:[2]/samples [style:knob]", 512, 1, 1024, 1); // #samples
-dtime	= hslider("/h:[2]/decay time [style:knob]", 4, 0, 10, 0.01); // -60db decay time
+size	= vslider("/h:[2]/samples [style:knob]", 512, 1, 1024, 1); // #samples
+dtime	= vslider("/h:[2]/decay time [style:knob]", 4, 0, 10, 0.01); // -60db decay time
 bend	= hslider("/v:[3]/pitch bend", 0, -2, 2, 0.01); // pitch bend/semitones
 
 // voice parameters
@@ -49,5 +48,4 @@ smooth(c)	= *(1-c) : +~*(c);
 process	= noise*gain : *(gate : excitator)
 	: resonator(SR/(freq*pow(2,bend/12)))
 	: dcblocker
-	: (*(smooth(0.99, db2linear(vol))) :
-	   panner(smooth(0.99, (pan+1)/2)));
+	: (*(smooth(0.99, vol)) : panner(smooth(0.99, pan)));
