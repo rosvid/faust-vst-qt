@@ -6,9 +6,9 @@ Copyright (c) 2015-2016 by Roman Svidler
 This software is distributed under the Lesser GNU Public License (LGPL);
 please check the included COPYING and COPYING.LESSER files for details.
 
-This is an extension of Albert Gräf's faust-vst
-architecture (https://bitbucket.org/agraef/faust-vst). It provides
-experimental support for native Qt GUIs in Faust-generated VST plugins.
+This is an extension of the faust-vst architecture
+(https://bitbucket.org/agraef/faust-vst). It provides experimental support for
+native Qt GUIs in Faust-generated VST plugins.
 
 **NOTES:** This is work in progress, so expect some bugs. Only Linux is
 supported at present. To use this architecture, Faust, the VST SDK and Qt are
