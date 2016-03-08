@@ -47,7 +47,7 @@ SDKSRC = $(firstword $(patsubst %/,%,$(dir $(wildcard $(addsuffix vstplugmain.cp
 # number of synth voices (VSTi only; arg must be an integer)
 # OPTS += -nvoices 16
 # extra polyphony and tuning controls (VSTi only)
-# OPTS += -voicectrls
+OPTS += -voicectrls
 # retain the build directory (useful if you want to change stuff manually)
 # OPTS += -keep
 # preferred widget style (qss); must be one of Default, Blue, Grey, Salmon
