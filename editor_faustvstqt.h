@@ -18,6 +18,7 @@ class Editor_faustvstqt : public QObject, public AEffEditor{
 
     VSTWrapper* effect;
     QScrollArea* widget;
+    void *uidsp;
     QTGUI* qtinterface;
 #ifdef OSCCTRL
     OSCUI* oscinterface;

@@ -2395,7 +2395,7 @@ std::list<GUI*> GUI::fGuiList;
  * @param effect
  */
 Editor_faustvstqt::Editor_faustvstqt(VSTWrapper* effect) : effect(effect),
-  widget(NULL), qtinterface(NULL),
+  widget(NULL), uidsp(NULL), qtinterface(NULL),
 #ifdef OSCCTRL
   oscinterface(NULL),
 #endif
@@ -2932,6 +2932,7 @@ bool Editor_faustvstqt::open(void *ptr)
   //qDebug() << "DebugInfo: " << QObject::dumpObjectInfo();
 #endif
 
+  uidsp = dsp;
   return true;
 }
 
@@ -2980,6 +2981,9 @@ void Editor_faustvstqt::close()
   widget = NULL;
   delete hostWindow;
   hostWindow = NULL;
+  mydsp* dsp = (mydsp*)uidsp;
+  delete dsp;
+  dsp = NULL;
   passiveControls.clear();
 
 #if FAUSTQT_DEBUG
@@ -3083,11 +3087,6 @@ void Editor_faustvstqt::updateVST_buttonPressed()
   int vstParam = QObject::sender()->property("vstParam").toInt();
 #if FAUSTQT_DEBUG>1
   qDebug() << "VST: vstParam: " << vstParam;
-#endif
-  char text[32];
-  effect->getParameterName(vstParam, text);
-#if FAUSTQT_DEBUG>1
-  qDebug() << "VST: label: "          << text;
   qDebug() << "VST: button pressed";
 #endif
   effect->setParameter(vstParam, 1.0f);
@@ -3155,10 +3154,8 @@ void Editor_faustvstqt::updateVST()
 
 #if FAUSTQT_DEBUG>1
   qDebug() << "VST: vstParam: "       << vstParam;
-#endif
   char text[32];
   effect->getParameterName(vstParam, text);
-#if FAUSTQT_DEBUG>1
   qDebug() << "VST: label: "          << text;
   qDebug() << "VST: min: "            << minimum;
   qDebug() << "VST: max: "            << maximum;
