@@ -3,6 +3,10 @@
 Copyright (c) 2014-2016 by Albert Gräf  
 Copyright (c) 2015-2016 by Roman Svidler
 
+**NOTE:** This package is now obsolete, as the Qt support was integrated into
+the main faust-vst source. You can grab the latest code from Bitbucket here:
+https://bitbucket.org/agraef/faust-vst
+
 This software is distributed under the Lesser GNU Public License (LGPL);
 please check the included COPYING and COPYING.LESSER files for details.
 
@@ -10,10 +14,10 @@ This is an extension of the faust-vst architecture
 (https://bitbucket.org/agraef/faust-vst). It provides experimental support for
 native Qt GUIs in Faust-generated VST plugins.
 
-**NOTES:** This is work in progress, so expect some bugs. Only Linux is
-supported at present. To use this architecture, Faust, the VST SDK and Qt are
-needed, so you'll want to install these beforehand. Please also check the
-upstream faust-vst documentation for further information.
+This is work in progress, so expect some bugs. Only Linux is supported at
+present. To use this architecture, Faust, the VST SDK and Qt are needed, so
+you'll want to install these beforehand. Please also check the upstream
+faust-vst documentation for further information.
 
 ## Installation
 
