@@ -5,16 +5,28 @@
 # Search for qmake or qmake-qt5
 QMAKE=$(which qmake-qt5 || echo qmake) 
 CUR=$(pwd)
-FAUSTINC=/usr/include
-FAUSTQT=$FAUSTINC/faust/gui/faustqt.h
-EDITOR=/usr/local/lib/faust/editor_faustvstqt.h
-FAUSTLOCAL=/usr/local/lib/faust
+# Where the Faust includes live. This is set at build/installation time, but
+# we allow this to be overridden with an environment variable.
+[ -z $FAUSTINC ] && FAUSTINC=@FAUSTINC@
+FAUSTQT=$FAUSTINC/gui/faustqt.h
+# Where our own Faust library files are (architecture and editor include
+# file). This may be under a different prefix, e.g., if Faust lives under
+# /usr but the faust-vst-qt package was installed under /usr/local. Again,
+# this path is set at build/installation time but can be overridden with an
+# environment variable.
+[ -z $FAUSTLIB ] && FAUSTLIB=@FAUSTLIB@
+EDITOR=$FAUSTLIB/editor_faustvstqt.h
 
 # defaults (these can be changed with the options listed below)
 FAUST_META=1
 FAUST_MIDICC=1
 FAUST_MTS=1
-NVOICES=0
+NVOICES=-1
+VOICE_CTRLS=0
+
+KEEP="no"
+STYLE=""
+QTEXTRA=""
 
 # These should be detected properly at build time, but you can also set them
 # to alternative locations using the SDK and SDKSRC environment variables.
@@ -36,23 +48,37 @@ if [[ $(uname) == Darwin ]]; then
     dllext=".vst"
 fi
 
-# We recognize the following special options here:
-# -nometa: ignore metadata (author information etc.) from the Faust source
-# -nomidicc: plugin doesn't process MIDI control data
-# -notuning: disable the tuning control (VSTi only)
-# -nvoices N: number of synth voices (VSTi only; arg must be an integer)
-
+# dispatch command arguments
 for ((i=1;i<$#+1;i++)); do
     p=${!i}
-    if [ $p = "-omp" ]; then
+    if [ $p = "-help" ] || [ $p = "-h" ]; then
+	cat <<EOF
+faust2faustvstqt [options ...] <file.dsp>
+Options:
+-http: activate HTTP control (add -qrcode to activate QR code generation)
+-keep: retain the build directory
+-nometa: ignore metadata (author information etc.) from the Faust source
+-nomidicc: plugin doesn't process MIDI control data
+-notuning: disable the tuning control (VSTi only)
+-nvoices N: number of synth voices (VSTi only; arg must be an integer)
+-osc: activate OSC control
+-style S: select the stylesheet (arg must be Default, Blue, Grey or Salmon)
+-voicectrls: extra polyphony and tuning controls (VSTi only)
+EOF
+	exit 0
+    elif [ $p = "-omp" ]; then
     	: ignore
     elif [ $p = "-icc" ]; then
 	CXX=icpc
     	CXXFLAGS="-O3 -xHost -ftz -fno-alias -fp-model fast=2"
     elif [ $p = "-osc" ]; then
-    	: ignore
+    	OSCDEFS="DEFINES += OSCCTRL"
+        OSCLIBS="-lOSCFaust"
     elif [ $p = "-httpd" ]; then
-    	: ignore
+    	HTTPDEFS="DEFINES += HTTPCTRL"
+	HTTPLIBS="-lHTTPDFaust -lmicrohttpd -lqrencode"
+    elif [ $p = "-qrcode" ]; then # requires -httpd
+	QRDEFS="DEFINES += QRCODECTRL"
     elif [ $p = "-nometa" ]; then
     	FAUST_META=0
     elif [ $p = "-nomidicc" ]; then
@@ -62,6 +88,8 @@ for ((i=1;i<$#+1;i++)); do
     elif [ $p = "-nvoices" ]; then
 	(( i++ ))
     	NVOICES=${!i}
+    elif [ $p = "-voicectrls" ]; then
+    	VOICE_CTRLS=1
     elif [ $p = "-arch32" ]; then
 	PROCARCH="-m32 -L/usr/lib32"
     elif [ $p = "-arch64" ]; then
@@ -69,6 +97,11 @@ for ((i=1;i<$#+1;i++)); do
     elif [ $p = "-osx" ]; then
 	CXXFLAGS="-O3 $ARCH -mfpmath=sse -msse -msse2 -msse3 -ffast-math -ftree-vectorize -I/opt/local/include"
 	dllext=".vst"
+    elif [ $p = "-style" ]; then
+	(( i++ ))
+    	STYLE=${!i}
+    elif [ $p = "-keep" ]; then
+	KEEP="yes"
     elif [ ${p:0:1} = "-" ]; then
 	OPTIONS="$OPTIONS $p"
     elif [[ -f "$p" ]]; then
@@ -77,6 +110,10 @@ for ((i=1;i<$#+1;i++)); do
 	OPTIONS="$OPTIONS $p"
     fi
 done
+
+if [ -n "$OSCDEFS" -o -n "$HTTPDEFS" ]; then
+    QTEXTRA="network"
+fi
 
 FILES=( $FILES )
 if [ ${#FILES[@]} = 0 ]; then
@@ -90,14 +127,25 @@ fi
 arch=faustvstqt.cpp
 dspname=${FILES[0]}
 SRCDIR=$(dirname "$dspname")
+ABSDIR=$(cd $SRCDIR && pwd)
 
 clsname=`basename "$dspname" .dsp`
 cppname="$clsname.cpp"
 soname="$clsname$dllext"
 tmpdir=`mktemp -d /tmp/faust2faustvstqt.XXXXXX`
 
+RESOURCES=
+STYLE_CXXFLAGS=
+if [ -n "$STYLE" ]; then
+    RESOURCES="RESOURCES+=$FAUSTINC/gui/Styles/$STYLE.qrc"
+    STYLE_CXXFLAGS="QMAKE_CXXFLAGS+=-DSTYLE=\"$STYLE\""
+fi
+
 CXX=g++
-CPPFLAGS="-DFAUST_META=$FAUST_META -DFAUST_MIDICC=$FAUST_MIDICC -DFAUST_MTS=$FAUST_MTS -DNVOICES=$NVOICES -I$SDK -I$SDKSRC -D__cdecl="
+CPPFLAGS="-DFAUST_META=$FAUST_META -DFAUST_MIDICC=$FAUST_MIDICC -DFAUST_MTS=$FAUST_MTS -DVOICE_CTRLS=$VOICE_CTRLS -I$SDK -I$SDKSRC -D__cdecl="
+if [ $NVOICES -ge 0 ]; then
+CPPFLAGS="$CPPFLAGS -DNVOICES=$NVOICES"
+fi
 
 # Extra SDK modules needed to build a working plugin.
 main=vstplugmain.cpp
@@ -115,6 +163,8 @@ mkdir -p $tmpdir
 # Compile the Faust module.
 faust -i -a $arch $OPTIONS "$dspname" -o "$tmpdir/$cppname"
 if [[ $(uname) == Darwin ]]; then
+    echo "Sorry, Mac OS X compilation is not supported yet." >&2
+    exit 1
     mkdir -p $tmpdir/$soname/Contents/MacOS
     printf '%s' 'BNDL????' > $tmpdir/$soname/Contents/PkgInfo
     sed -e "s?@name@?$clsname?g;s?@version@?1.0.0?g" > $tmpdir/$soname/Contents/Info.plist <<EOF
@@ -146,12 +196,12 @@ if [[ $(uname) == Darwin ]]; then
 EOF
     $CXX -bundle $CXXFLAGS $FAUSTTOOLSFLAGS $PROCARCH $CPPFLAGS $sdksrc "$tmpdir/$cppname" -o "$tmpdir/$soname/Contents/MacOS/$clsname"
 else
-    echo "Generating faust-vst-qt-Plug-In. Please wait...";
+    #echo "Generating VST-Qt plugin $soname. Please wait...";
 
     # compile c++ to binary
     (
         cd "$tmpdir"
-       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=-D__cdecl=" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLOCAL" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" "RESOURCES+= $FAUSTINC/faust/gui/Styles/Grey.qrc"
+       	$QMAKE -project -t lib "CONFIG += gui plugin no_plugin_name_prefix warn_off" "QT += widgets x11extras $QTEXTRA" "QMAKE_TARGET=$clsname" "QMAKE_CXXFLAGS+=$CPPFLAGS" $STYLE_CXXFLAGS "LIBS+=$ARCHLIB $OSCLIBS $HTTPLIBS" "INCLUDEPATH+=$SDK" "INCLUDEPATH+=$SDKSRC" "INCLUDEPATH+=$FAUSTLIB" "INCLUDEPATH+=$ABSDIR" "SOURCES+=$SDKSRC/$main" "SOURCES+=$SDKSRC/$afx" "SOURCES+=$SDKSRC/$afxx" "HEADERS+=$EDITOR" "HEADERS+=$FAUSTQT" $RESOURCES "$OSCDEFS" "$HTTPDEFS" "$QRDEFS"
         $QMAKE *.pro
       	make
     ) > /dev/null
@@ -163,7 +213,13 @@ rm -rf "$SRCDIR/$soname"
 mv "$tmpdir/"*.so "$tmpdir/$soname"
 # copy
 cp -r "$tmpdir/$soname" "$SRCDIR"
-# Clean up.
-rm -rf $tmpdir
+if [[ $KEEP == yes ]]; then
+    # keep the build directory
+    rm -rf "$SRCDIR/$clsname"
+    mv $tmpdir "$SRCDIR/$clsname"
+else
+    # Clean up.
+    rm -rf $tmpdir
+fi
 # Print the name of the generated plugin.
 echo "$SRCDIR/$soname;"

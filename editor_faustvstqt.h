@@ -6,29 +6,42 @@
 #include <faust/gui/faustqt.h>
 
 class VSTWrapper;
+#ifdef OSCCTRL
+class OSCUI;
+#endif
+#ifdef HTTPCTRL
+class httpdUI;
+#endif
 
 class Editor_faustvstqt : public QObject, public AEffEditor{
     Q_OBJECT
 
     VSTWrapper* effect;
     QScrollArea* widget;
+    void *uidsp;
     QTGUI* qtinterface;
+#ifdef OSCCTRL
+    OSCUI* oscinterface;
+#endif
+#ifdef HTTPCTRL
+    httpdUI *httpdinterface;
+#endif
     QWindow* hostWindow;
 
-    // passiveControls: passive Kontrollelemente, die ständiges GUI-Update benötigen
+    // passiveControls: passive control elements needing continuous GUI update
     QVector<QObject*> passiveControls;
 
 public:
     Editor_faustvstqt(VSTWrapper* effect);
     ~Editor_faustvstqt();
 
-    // open(): öffnet die GUI
+    // open(): opens the GUI
     virtual bool open(void *ptr);
-    // getRect(): legt die Größe der GUI fest
+    // getRect(): determines the size of the GUI
     virtual bool getRect (ERect** rect);
-    // idle(): Events werden hier abgefangen
+    // idle(): event processing is done here
     virtual void idle ();
-    // close(): schließt die GUI
+    // close(): closes the GUI
     virtual void close();
 
     float valueToVST(double value, double minimum, double maximum);
@@ -36,6 +49,7 @@ public:
 
 protected:
     ERect rectangle;
+    float voices_zone, tuning_zone;
 
 signals:
     void getVSTParameters(QObject* object);

@@ -49,7 +49,7 @@ with {
 	loop	= (+ : fdelay(1<<16, t)) ~ *(feedback);
 };
 
-process			= vgroup("flanger", (left, right))
+process			= (left, right)
 with {
 	left	= flanger(dtime,freq,level,feedback,depth,0);
 	right	= flanger(dtime,freq,level,feedback,depth,stereo*PI);

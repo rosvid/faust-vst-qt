@@ -13,6 +13,15 @@ libdir = $(prefix)/lib
 vstlibdir = $(libdir)/vst
 faustlibdir = $(libdir)/faust
 
+# Try to guess the Faust installation prefix.
+faustprefix = $(patsubst %/bin/faust,%,$(shell which faust 2>/dev/null))
+ifeq ($(strip $(faustprefix)),)
+# Fall back to /usr/local.
+faustprefix = /usr/local
+endif
+incdir = $(faustprefix)/include
+faustincdir = $(incdir)/faust
+
 # Check for some common locations of the SDK files. This falls back to
 # /usr/local/src/vstsdk if none of these are found. In that case, or if make
 # picks the wrong location, you can also set the SDK variable explicitly.
@@ -26,42 +35,29 @@ SDK = $(firstword $(wildcard $(foreach path,$(sdkpaths),$(addprefix $(path)/,$(s
 #SDKSRC = $(SDK)/public.sdk/source/vst2.x
 SDKSRC = $(firstword $(patsubst %/,%,$(dir $(wildcard $(addsuffix vstplugmain.cpp,$(SDK)/ $(SDK)/public.sdk/source/vst2.x/)))) $(SDK)/public.sdk/source/vst2.x)
 
-# Here are a few conditional compilation directives which you can set.
-# Disable Faust metadata.
-#DEFINES += -DFAUST_META=0
-# Disable MIDI controller processing.
-#DEFINES += -DFAUST_MIDICC=0
-# Disable the tuning control (synth only).
-#DEFINES += -DFAUST_MTS=0
-# Number of voices (synth: polyphony).
-#DEFINES += -DNVOICES=16
-# Debug recognized MIDI controller metadata.
-#DEFINES += -DDEBUG_META=1
-# Debug incoming MIDI messages.
-#DEFINES += -DDEBUG_MIDI=1
-# Debug MIDI note messages (synth).
-#DEFINES += -DDEBUG_NOTES=1
-# Debug MIDI controller messages.
-#DEFINES += -DDEBUG_MIDICC=1
-# Debug RPN messages (synth: pitch bend range, master tuning).
-#DEFINES += -DDEBUG_RPN=1
-# Debug MTS messages (synth: octave/scale tuning).
-#DEFINES += -DDEBUG_MTS=1
+# Here are a few options which you can set. Please check the beginning of
+# faust2faustvstqt.in for a closer explanation of these.
 
-# Additional Faust flags.
-# Uncomment the following to have Faust substitute the proper class name into
-# the C++ code. Be warned, however, that this requires that the basename of
-# the dsp file is a valid C identifier, which isn't guaranteed.
-#FAUST_FLAGS += -cn $(@:examples/%.cpp=%)
+# ignore metadata (author information etc.) from the Faust source
+# OPTS += -nometa
+# plugin doesn't process MIDI control data
+# OPTS += -nomidicc
+# disable the tuning control (VSTi only)
+# OPTS += -notuning
+# number of synth voices (VSTi only; arg must be an integer)
+# OPTS += -nvoices 16
+# extra polyphony and tuning controls (VSTi only)
+OPTS += -voicectrls
+# retain the build directory (useful if you want to change stuff manually)
+# OPTS += -keep
+# preferred widget style (qss); must be one of Default, Blue, Grey, Salmon
+# OPTS += -style Grey
+# HTTP and OSC support (please check the Faust manual for details)
+# OPTS += -http -qrcode
+# OPTS += -osc
 
-# Default compilation flags.
-CXXFLAGS = -O3
-# Use this for debugging code instead.
-#CXXFLAGS = -g -O2
-
-# Shared library suffix and compiler option to create a shared library.
+# Shared library suffix.
 DLL = .so
-shared = -shared
 
 # Try to guess the host system type and figure out platform specifics.
 host = $(shell ./config.guess)
@@ -71,95 +67,35 @@ EXE = .exe
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX
+# OSX (untested)
 DLL = .vst
-# Build fat binaries which will work with both 32 and 64 bit hosts.
-ARCH = -arch i386 -arch x86_64
-EXTRA_CFLAGS += $(ARCH)
-shared = -bundle $(ARCH)
-# MacPorts compatibility
-EXTRA_CFLAGS += -I/opt/local/include
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-EXTRA_CFLAGS += -fPIC
-endif
-ifneq "$(findstring x86,$(host))" ""
-# architecture-specific options for x86 and x86_64
-EXTRA_CFLAGS += -msse -ffast-math
 endif
 
 # DSP sources and derived files.
 dspsource = $(sort $(wildcard */*.dsp))
-cppsource = $(patsubst %.dsp,%.cpp,$(dspsource))
-objects = $(patsubst %.dsp,%.o,$(dspsource))
 plugins = $(patsubst %.dsp,%$(DLL),$(dspsource))
-# These timestamp files are only created when generating OS X bundles.
-stamps = $(patsubst %.dsp,%.stamp,$(dspsource))
-
-# Extra objects with VST-specific code needed to build the plugins.
-main = vstplugmain
-afx = audioeffect
-afxx = audioeffectx
-extra_objects = $(addsuffix .o, $(main) $(afx) $(afxx))
-
-# Architecture name.
-arch = faustvstqt
-
-EXTRA_CFLAGS += -I$(SDK) -I$(SDKSRC) -Iexamples -D__cdecl= $(DEFINES)
+# for -keep
+srcdirs = $(patsubst %.dsp,%,$(dspsource))
 
 .PHONY: all clean install uninstall install-faust uninstall-faust dist distcheck
 
-all: faust2faustvstqt
+all: faust2faustvstqt $(plugins)
 
-# This doesn't work (yet!).
-plugins: $(plugins)
-
-# This sets the proper SDK paths in the faust2faustvstqt script, detected at
-# build time.
+# This sets the proper SDK and Faust paths in the faust2faustvstqt script,
+# detected at build time.
 faust2faustvstqt: faust2faustvstqt.in
-	sed -e 's?@SDK@?$(SDK)?g;s?@SDKSRC@?$(SDKSRC)?g' < $< > $@
+	sed -e 's?@SDK@?$(SDK)?g;s?@SDKSRC@?$(SDKSRC)?g;s?@FAUSTINC@?$(faustincdir)?g;s?@FAUSTLIB@?$(faustlibdir)?g' < $< > $@
 	chmod a+x $@
 
 # Generic build rules.
 
-%.cpp: %.dsp
-	faust -a $(arch).cpp -I examples $(FAUST_FLAGS) $< -o $@
-
-$(main).o: $(SDKSRC)/$(main).cpp
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) -c -o $@ $<
-
-$(afx).o: $(SDKSRC)/$(afx).cpp
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) -c -o $@ $<
-
-$(afxx).o: $(SDKSRC)/$(afxx).cpp
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) -c -o $@ $<
-
-%.o: %.cpp $(arch).cpp
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) -c -o $@ $<
-
-ifeq "$(DLL)" ".vst"
-# This rule builds an OS X bundle. Since the target %.vst is a directory here,
-# we have to go to some lengths to prevent make from rebuilding the target
-# each time.
-.PRECIOUS: %.stamp
-%.vst: %.stamp
-	@echo made $@ >/dev/null
-%.stamp: %.o $(extra_objects)
-	mkdir -p $(@:.stamp=.vst)/Contents/MacOS
-	printf '%s' 'BNDL????' > $(@:.stamp=.vst)/Contents/PkgInfo
-	sed -e 's?@name@?$(notdir $(@:.stamp=))?g;s?@version@?1.0.0?g' < Info.plist.in > $(@:.stamp=.vst)/Contents/Info.plist
-	$(CXX) $(shared) $^ -o $(@:.stamp=.vst)/Contents/MacOS/$(notdir $(@:.stamp=))
-	touch $@
-else
-%$(DLL): %.o $(extra_objects)
-	$(CXX) $(shared) $^ -o $@
-endif
+%$(DLL): %.dsp faust2faustvstqt
+	+FAUSTLIB=$(CURDIR) ./faust2faustvstqt $(OPTS) -I examples $<
 
 # Clean.
 
 clean:
-	rm -Rf faust2faustvstqt $(cppsource) $(stamps) $(objects) $(extra_objects) $(plugins)
+	rm -Rf faust2faustvstqt $(plugins) $(srcdirs)
 
 # Install.
 

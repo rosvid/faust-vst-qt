@@ -13,18 +13,18 @@ import("music.lib");
 
 /* Controls. */
 
-exp_group(x)	= hgroup("1-expander", x);
-env_group(x)	= vgroup("2-envelop", x);
-gain_group(x)	= vgroup("3-gain", x);
+exp_group(x)	= hgroup("[1]", x); // expander
+env_group(x)	= vgroup("[2]", x); // envelop
+gain_group(x)	= vgroup("[3]", x); // gain
 
-ratio		= exp_group(nentry("ratio", 2, 1, 20, 0.1));
-threshold	= exp_group(nentry("threshold", -40, -96, 10, 0.1));
-knee		= exp_group(nentry("knee", 3, 0, 20, 0.1));
+ratio		= exp_group(nentry("[1]ratio[style:knob]", 2, 1, 20, 0.1));
+threshold	= exp_group(nentry("[2]threshold[style:knob]", -40, -96, 10, 0.1));
+knee		= exp_group(nentry("[3]knee[style:knob]", 3, 0, 20, 0.1));
 
 attack		= env_group(hslider("attack", 0.001, 0, 1, 0.001)) : max(1/SR);
 release		= env_group(hslider("release", 0.1, 0, 10, 0.01)) : max(1/SR);
 
-gain(x)		= attach(x, x : gain_group(hbargraph("gain", -96, 0)));
+gain(x)		= attach(x, x : gain_group(hbargraph("gain[unit:dB]", -96, 0)));
 
 t		= 0.1;
 g		= exp(-1/(SR*t));
